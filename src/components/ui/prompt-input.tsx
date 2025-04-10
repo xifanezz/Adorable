@@ -73,15 +73,16 @@ function PromptInput({
       <PromptInputContext.Provider
         value={{
           isLoading,
-          value: value ?? internalValue,
-          setValue: onValueChange ?? handleChange,
+          value: value !== undefined ? value : internalValue,
+          setValue: onValueChange || handleChange,
           maxHeight,
           onSubmit,
+          disabled: false,
         }}
       >
         <div
           className={cn(
-            "border-input bg-gray-50 rounded-md border p-2",
+            "border-input bg-gray-50 rounded-md border p-2 focus-within:border-gray-400 focus-within:ring-1 focus-within:ring-gray-400",
             className
           )}
         >
@@ -110,10 +111,14 @@ function PromptInputTextarea({
 
     if (!textareaRef.current) return
     textareaRef.current.style.height = "auto"
-    textareaRef.current.style.height =
-      typeof maxHeight === "number"
-        ? `${Math.min(textareaRef.current.scrollHeight, maxHeight)}px`
-        : `min(${textareaRef.current.scrollHeight}px, ${maxHeight})`
+    
+    // Make sure scrollHeight exists before using it
+    if (textareaRef.current.scrollHeight) {
+      textareaRef.current.style.height =
+        typeof maxHeight === "number"
+          ? `${Math.min(textareaRef.current.scrollHeight, maxHeight)}px`
+          : `min(${textareaRef.current.scrollHeight}px, ${maxHeight})`
+    }
   }, [value, maxHeight, disableAutosize])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

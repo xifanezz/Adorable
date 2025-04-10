@@ -2,46 +2,55 @@
 
 import {
   PromptInput,
-  PromptInputAction,
-  PromptInputActions,
+  // PromptInputAction,
+  // PromptInputActions,
   PromptInputTextarea,
 } from "@/components/ui/prompt-input";
 import { Button } from "@/components/ui/button";
 import { ArrowUp, Square } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, ChangeEvent } from "react";
 
-export function PromptInputBasic() {
-  const [input, setInput] = useState("");
+interface PromptInputBasicProps {
+  onSubmit?: (
+    e?: React.FormEvent<HTMLFormElement> | any
+  ) => void;
+  isGenerating?: boolean;
+  input?: string;
+  onValueChange?: (value: string) => void;
+}
+
+export function PromptInputBasic({
+  onSubmit: handleSubmit,
+  isGenerating = false,
+  input = "",
+  onValueChange,
+}: PromptInputBasicProps) {
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 2000);
-  };
-
-  const handleValueChange = (value: string) => {
-    setInput(value);
-  };
+  useEffect(() => {
+    setIsLoading(isGenerating);
+  }, [isGenerating]);
 
   return (
     <div className="relative w-full">
       <PromptInput
         value={input}
-        onValueChange={handleValueChange}
+        onValueChange={(value) => onValueChange?.(value)}
         isLoading={isLoading}
-        onSubmit={handleSubmit}
+        onSubmit={() => handleSubmit?.()}
         className="w-full"
       >
-        <PromptInputTextarea placeholder="Ask me anything..." className="pr-10" />
+        <PromptInputTextarea
+          placeholder="Ask me anything..."
+          className="pr-10"
+        />
       </PromptInput>
       <div className="absolute right-3 bottom-3">
         <Button
           variant="ghost"
           size="icon"
           className="h-8 w-8"
-          onClick={handleSubmit}
+          onClick={() => handleSubmit?.()}
         >
           {isLoading ? (
             <Square className="size-4 fill-current" />
