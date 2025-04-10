@@ -2,8 +2,8 @@
 
 import { useChat } from "@ai-sdk/react";
 import { PromptInputBasic } from "./chatinput";
-import { useState } from "react";
 import { Markdown } from "./ui/markdown";
+import { ChangeEvent } from "react";
 
 export default function Chat() {
   const { messages, handleSubmit, input, handleInputChange, status } = useChat({
@@ -12,11 +12,13 @@ export default function Chat() {
 
   // Create a wrapper for handleInputChange to match expected function signature
   const onValueChange = (value: string) => {
-    handleInputChange({ target: { value } } as any);
+    handleInputChange({
+      target: { value },
+    } as ChangeEvent<HTMLTextAreaElement>);
   };
 
   // Create a submission handler
-  const onSubmit = (e?: any) => {
+  const onSubmit = (e?: Event) => {
     if (e?.preventDefault) {
       e.preventDefault();
     }
@@ -31,18 +33,23 @@ export default function Chat() {
             <p className="text-xs font-medium text-gray-500 mb-1">
               {message.role === "user" ? "You" : "Styley"}
             </p>
-            <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
+            <div className="prose-container">
               {Array.isArray(message.parts) ? (
                 message.parts.map((part, index) => {
                   if (part.type === "text") {
                     return (
-                      <div key={index} className="mb-2">
-                        <Markdown>{part.text}</Markdown>
+                      <div key={index} className="mb-4">
+                        <Markdown className="prose prose-sm dark:prose-invert max-w-none">
+                          {part.text}
+                        </Markdown>
                       </div>
                     );
                   } else if (part.type && part.type !== "step-start") {
                     return (
-                      <div key={index} className="mb-2 text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded">
+                      <div
+                        key={index}
+                        className="mb-2 text-xs bg-gray-100 dark:bg-gray-800 p-2.5 rounded-lg"
+                      >
                         {JSON.stringify(part)}
                       </div>
                     );
@@ -50,7 +57,9 @@ export default function Chat() {
                   return null;
                 })
               ) : message.content ? (
-                <Markdown>{message.content}</Markdown>
+                <Markdown className="prose prose-sm dark:prose-invert max-w-none">
+                  {message.content}
+                </Markdown>
               ) : (
                 <p className="text-gray-500">No content</p>
               )}
@@ -66,7 +75,7 @@ export default function Chat() {
           </div>
         )}
       </div>
-      <div className="p-3 sticky bottom-0 transition-all">
+      <div className="p-3 sticky bottom-0 transition-all bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm z-10">
         <PromptInputBasic
           input={input || ""}
           onSubmit={onSubmit}
