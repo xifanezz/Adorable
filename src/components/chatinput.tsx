@@ -38,24 +38,24 @@ export function PromptInputBasic({
         onValueChange={(value) => onValueChange?.(value)}
         isLoading={isLoading}
         onSubmit={() => handleSubmit?.()}
-        className="w-full"
+        className="w-full border border-gray-300 shadow-sm rounded-lg"
       >
         <PromptInputTextarea
-          placeholder="Ask me anything..."
+          placeholder="Type your message here..."
           className="pr-10"
         />
       </PromptInput>
       <div className="absolute right-3 bottom-3">
         <Button
-          variant="ghost"
+          variant={isLoading ? "destructive" : "default"}
           size="icon"
-          className="h-8 w-8"
+          className="h-8 w-8 rounded-full"
           onClick={() => handleSubmit?.()}
         >
           {isLoading ? (
-            <Square className="size-4 fill-current" />
+            <Square className="h-4 w-4" />
           ) : (
-            <ArrowUp className="size-4" />
+            <ArrowUp className="h-4 w-4" />
           )}
         </Button>
       </div>
