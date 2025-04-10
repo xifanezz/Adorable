@@ -3,11 +3,15 @@
 import { useChat } from '@ai-sdk/react';
 import { useEffect, useState } from 'react';
 import { Markdown } from './ui/markdown';
+import path from 'path';
 
 interface FileItem {
   path: string;
   type: 'tree' | 'blob';
   size?: number;
+  content?: string;
+  contentType?: string;
+  encoding?: string;
 }
 
 interface FileContent {
@@ -52,7 +56,6 @@ export default function Preview() {
         },
         body: JSON.stringify({
           repoUrl: 'https://92062196-4509-4157-9111-cada6bdd8837:5U5MHmSiqFjUoNVP.K7Y5z62ZcTyhVZDV@git.freestyle.it.com/d93a8af8-663c-4413-b127-39b32bec2466',
-          path: currentPath,
         }),
       });
       
@@ -65,7 +68,59 @@ export default function Preview() {
       if (data.error) {
         setError(data.error);
       } else {
-        setFiles(data.files || []);
+        // Convert the files record to an array for the current path
+        const allFiles = data.files || {};
+        const filesList: FileItem[] = [];
+        
+        // Get files and directories at the current path
+        const pathPrefix = currentPath ? currentPath + '/' : '';
+        const pathSegmentsCount = currentPath.split('/').filter(Boolean).length;
+        
+        // Process each file path
+        Object.entries(allFiles).forEach(([filePath, fileInfo]: [string, any]) => {
+          // Skip files not in the current directory
+          if (!currentPath && filePath.includes('/')) {
+            // Root directory - only show top-level files and directories
+            const topLevelName = filePath.split('/')[0];
+            if (!filesList.find(f => f.path === topLevelName)) {
+              filesList.push({
+                path: topLevelName,
+                type: 'tree',
+                size: 0
+              });
+            }
+            return;
+          } else if (currentPath && !filePath.startsWith(pathPrefix)) {
+            // Not in the current directory
+            return;
+          }
+          
+          // For directory listings, we only want direct children
+          const remainingPath = filePath.substring(pathPrefix.length);
+          if (remainingPath.includes('/')) {
+            // This is a nested file, only add the directory
+            const dirName = remainingPath.split('/')[0];
+            if (!filesList.find(f => f.path === dirName)) {
+              filesList.push({
+                path: dirName,
+                type: 'tree',
+                size: 0
+              });
+            }
+          } else if (remainingPath) {
+            // This is a file in the current directory
+            filesList.push({
+              path: remainingPath,
+              type: 'blob',
+              size: fileInfo.size,
+              content: fileInfo.content,
+              contentType: getContentType(remainingPath),
+              encoding: 'utf-8'
+            });
+          }
+        });
+        
+        setFiles(filesList);
       }
     } catch (err) {
       console.error('Error fetching repository files:', err);
@@ -75,12 +130,42 @@ export default function Preview() {
     }
   };
   
+  // Helper function to determine content type
+  const getContentType = (filePath: string): string => {
+    const ext = path.extname(filePath).toLowerCase();
+    const contentTypeMap: Record<string, string> = {
+      '.js': 'application/javascript',
+      '.jsx': 'application/javascript',
+      '.ts': 'application/typescript',
+      '.tsx': 'application/typescript',
+      '.html': 'text/html',
+      '.css': 'text/css',
+      '.json': 'application/json',
+      '.md': 'text/markdown',
+      '.txt': 'text/plain',
+      '.yaml': 'application/yaml',
+      '.yml': 'application/yaml',
+    };
+    
+    return contentTypeMap[ext] || 'text/plain';
+  };
+  
   useEffect(() => {
     fetchRepoFiles();
   }, [currentPath]);
 
-  const navigateToFolder = (path: string) => {
-    setCurrentPath(path);
+  const navigateToFolder = (folderPath: string) => {
+    setCurrentPath(folderPath);
+    setSelectedFile(null);
+    setFileContent(null);
+    
+    // Filter files to show only those in the current directory
+    const filteredFiles = files.filter(file => {
+      // Check if this file is directly in the requested folder
+      return file.path.startsWith(folderPath + '/') && 
+             // Don't include nested directory contents
+             !file.path.substring(folderPath.length + 1).includes('/');
+    });
   };
 
   const navigateUp = () => {
@@ -91,7 +176,7 @@ export default function Preview() {
     setFileContent(null);
   };
   
-  const viewFile = async (filePath: string) => {
+  const viewFile = (filePath: string) => {
     setLoadingContent(true);
     setError(null);
     setSelectedFile(filePath);
@@ -99,25 +184,47 @@ export default function Preview() {
     try {
       const fullPath = currentPath ? `${currentPath}/${filePath}` : filePath;
       
-      const response = await fetch('/api/git/content', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          repoUrl: 'https://92062196-4509-4157-9111-cada6bdd8837:5U5MHmSiqFjUoNVP.K7Y5z62ZcTyhVZDV@git.freestyle.it.com/d93a8af8-663c-4413-b127-39b32bec2466',
-          filePath: fullPath,
-        }),
+      // Find the file in our existing files data
+      const selectedFileData = files.find(f => {
+        const fileFullPath = currentPath ? `${currentPath}/${f.path}` : f.path;
+        return fileFullPath === fullPath || f.path === fullPath;
       });
       
-      if (!response.ok) {
-        throw new Error(`Error fetching file content: ${response.status}`);
+      if (!selectedFileData) {
+        throw new Error(`File not found: ${fullPath}`);
       }
       
-      const data = await response.json();
-      setFileContent(data);
+      // If the file has content, use it directly
+      if (selectedFileData.content) {
+        setFileContent({
+          content: selectedFileData.content,
+          encoding: selectedFileData.encoding || 'utf-8',
+          contentType: selectedFileData.contentType || 'text/plain',
+          size: selectedFileData.size || 0,
+          path: fullPath,
+          commit: {
+            oid: 'latest',
+            message: 'Current version',
+            date: Date.now(),
+          }
+        });
+      } else {
+        // Set some basic info if content isn't available
+        setFileContent({
+          content: 'File content not available (possibly too large)',
+          encoding: 'utf-8',
+          contentType: selectedFileData.contentType || 'text/plain',
+          size: selectedFileData.size || 0,
+          path: fullPath,
+          commit: {
+            oid: 'latest',
+            message: 'Current version',
+            date: Date.now(),
+          }
+        });
+      }
     } catch (err) {
-      console.error('Error fetching file content:', err);
+      console.error('Error loading file content:', err);
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
     } finally {
       setLoadingContent(false);
