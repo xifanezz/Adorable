@@ -10,18 +10,28 @@ import {
 } from "@/components/ui/prompt-input";
 import Image from "next/image";
 import LogoSvg from "@/logo.svg";
+import { GlowEffect } from "@/components/ui/glow-effect";
+import { useEffect, useState as useReactState } from "react";
+import { Button } from "@/components/ui/button";
+import { ArrowUp, Square } from "lucide-react";
 
 export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isMounted, setIsMounted] = useReactState(false);
   const router = useRouter();
+
+  // Ensure hydration is complete before showing the glow effect
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleSubmit = async () => {
     if (!prompt.trim()) return;
 
     setIsLoading(true);
     try {
-      const app = await createApp();
+      const app = await createApp("Adorable App", prompt);
       router.push(`/app/${app.id}`);
     } catch (error) {
       console.error("Error creating app:", error);
@@ -49,57 +59,81 @@ export default function Home() {
         </p>
 
         {/* Prompt Input */}
-        <div className="w-full">
-          <PromptInput
-            isLoading={isLoading}
-            value={prompt}
-            onValueChange={setPrompt}
-            onSubmit={handleSubmit}
-            className="mb-4"
-          >
-            <PromptInputTextarea
-              placeholder="Describe the app you want to build..."
-              className="min-h-[100px]"
-            />
-            <PromptInputActions className="justify-end">
-              <button
+        <div className="w-full relative m-5">
+          {isMounted && (
+            <div className="absolute inset-0 -top-2 -bottom-2 -left-2 -right-2">
+              <GlowEffect
+                // blur="stronger"
+                scale={1}
+                mode="breathe"
+                colors={["#03001e", "#7303c0", "#ec38bc", "#fdeff9"]}
+                // colors={["#3357FF", "#33B6FF", "#33FFE0"]}
+                duration={7}
+              />
+            </div>
+          )}
+          <div className="relative">
+            <PromptInput
+              isLoading={isLoading}
+              value={prompt}
+              onValueChange={setPrompt}
+              onSubmit={handleSubmit}
+              className="relative z-10 bg-white/90 shadow-lg pr-4"
+            >
+              <PromptInputTextarea
+                placeholder="Describe the app you want to build..."
+                className="min-h-[100px] bg-white/90 backdrop-blur-sm pr-10"
+              />
+              <PromptInputActions className="justify-end">
+                {/* No visible content here */}
+              </PromptInputActions>
+            </PromptInput>
+            
+            {/* Absolutely positioned submit button */}
+            <div className="absolute right-3 bottom-3 z-20">
+              <Button
+                variant={isLoading ? "destructive" : "default"}
+                size="icon"
+                className="h-8 w-8 rounded-full shadow-md"
                 onClick={handleSubmit}
                 disabled={isLoading || !prompt.trim()}
-                className="px-4 py-2 bg-black text-white rounded-md font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
               >
                 {isLoading ? (
-                  <>
-                    <svg
-                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Building...
-                  </>
+                  <Square className="h-4 w-4" />
                 ) : (
-                  "Create App"
+                  <ArrowUp className="h-4 w-4" />
                 )}
-              </button>
-            </PromptInputActions>
-          </PromptInput>
+              </Button>
+            </div>
+          </div>
+        </div>
+        
+        {/* Example pills - moved outside the div with glow */}
+        <div className="mt-6">
+          <p className="text-center text-xs text-gray-500 mb-2">Examples</p>
+          <div className="flex flex-wrap justify-center gap-2">
+          <button 
+            onClick={() => setPrompt("Build a dog food marketplace where users can browse and purchase premium dog food.")}
+            className="px-3 py-1.5 text-sm border border-gray-300 rounded-full hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300"
+          >
+            Dog Food Marketplace
+          </button>
+          <button 
+            onClick={() => setPrompt("Create a personal website with portfolio, blog, and contact sections.")}
+            className="px-3 py-1.5 text-sm border border-gray-300 rounded-full hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300"
+          >
+            Personal Website
+          </button>
+          <button 
+            onClick={() => setPrompt("Build a B2B SaaS for burrito shops to manage inventory, orders, and delivery logistics.")}
+            className="px-3 py-1.5 text-sm border border-gray-300 rounded-full hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300"
+          >
+            Burrito B2B SaaS
+          </button>
+          </div>
         </div>
       </div>
-      <div className="flex   flex-[3]" />
+      <div className="flex flex-[3]" />
     </main>
   );
 }
