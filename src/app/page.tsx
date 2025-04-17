@@ -71,38 +71,42 @@ export default function Home() {
               />
             </div>
           )}
-          <div className="relative">
-            <PromptInput
-              isLoading={isLoading}
-              value={prompt}
-              onValueChange={setPrompt}
-              onSubmit={handleSubmit}
-              className="relative z-10 bg-white/90 shadow-lg pr-4"
-            >
-              <PromptInputTextarea
-                placeholder="Describe the app you want to build..."
-                className="min-h-[100px] bg-white/90 backdrop-blur-sm pr-10"
-              />
-              <PromptInputActions className="justify-end">
-                {/* No visible content here */}
-              </PromptInputActions>
-            </PromptInput>
-
-            {/* Absolutely positioned submit button */}
-            <div className="absolute right-3 bottom-3 z-20">
-              <Button
-                variant={isLoading ? "destructive" : "default"}
-                size="icon"
-                className="h-8 w-8 rounded-full shadow-md"
-                onClick={handleSubmit}
-                disabled={isLoading || !prompt.trim()}
+          {/* Adaptable width container */}
+          <div className="relative w-full max-w-full overflow-hidden">
+            {/* Custom input wrapper with adaptive width */}
+            <div className="w-full bg-white/90 shadow-lg rounded-md relative z-10">
+              <PromptInput
+                isLoading={isLoading}
+                value={prompt}
+                onValueChange={setPrompt}
+                onSubmit={handleSubmit}
+                className="relative z-10 border-none bg-transparent shadow-none"
               >
-                {isLoading ? (
-                  <Square className="h-4 w-4" />
-                ) : (
-                  <ArrowUp className="h-4 w-4" />
-                )}
-              </Button>
+                <PromptInputTextarea
+                  placeholder="Describe the app you want to build..."
+                  className="min-h-[100px] w-full bg-transparent backdrop-blur-sm pr-12"
+                />
+                <PromptInputActions className="justify-end">
+                  {/* No visible content here */}
+                </PromptInputActions>
+              </PromptInput>
+              
+              {/* Absolutely positioned submit button */}
+              <div className="absolute right-3 bottom-3 z-20">
+                <Button
+                  variant={isLoading ? "destructive" : "default"}
+                  size="icon"
+                  className="h-8 w-8 rounded-full shadow-md"
+                  onClick={handleSubmit}
+                  disabled={isLoading || !prompt.trim()}
+                >
+                  {isLoading ? (
+                    <Square className="h-4 w-4" />
+                  ) : (
+                    <ArrowUp className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
