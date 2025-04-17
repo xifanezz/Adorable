@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import path from "path";
 import git from "isomorphic-git";
 import { fs } from "@/lib/fs";
@@ -58,7 +58,6 @@ async function cloneRepo({
     fs,
     http,
     dir: `/${repoId}`,
-    ref: "HEAD",
   });
 }
 
@@ -176,9 +175,29 @@ export default function FileSystem({ repoUrl }: { repoUrl: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPath, setCurrentPath] = useState<string>("");
-  const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<FileContent | null>(null);
   const [loadingContent, setLoadingContent] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
+
+  const readme = useMemo(() => {
+    if (loadingContent) {
+      return null;
+    }
+    return (
+      files.find(
+        (f) =>
+          f.type === "blob" && (f.path === "README.md" || f.path === "README"),
+      )?.path ?? null
+    );
+  }, [files]);
+  useEffect(() => {
+    if (readme !== null && selectedFile === null) {
+      viewFile(readme);
+    } else if (readme === null) {
+      setSelectedFile(null);
+      setFileContent(null);
+    }
+  }, [readme, selectedFile]);
 
   const repoId = useCurrentRepo();
 
@@ -392,19 +411,23 @@ export default function FileSystem({ repoUrl }: { repoUrl: string }) {
 
     return (
       <div className="prose-container">
-        <div className="flex items-center mb-4">
-          <button
-            onClick={navigateUp}
-            disabled={!currentPath}
-            className={`px-2 py-1 rounded text-sm ${
-              !currentPath
-                ? "text-gray-400 cursor-not-allowed"
-                : "text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-            }`}
-          >
-            ⬅️ Back
-          </button>
-          <div className="ml-2 text-sm bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
+        <div className="flex gap-2 items-center mb-4">
+          {currentPath ? (
+            <button
+              onClick={navigateUp}
+              disabled={!currentPath}
+              className={cn(
+                `px-2 py-1 rounded text-sm flex gap-1 justify-center items-center`,
+                currentPath
+                  ? "text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                  : "text-gray-400 cursor-not-allowed",
+              )}
+            >
+              <ArrowLeftIcon className="h-4 w-4" />
+              <span>Back</span>
+            </button>
+          ) : null}
+          <div className="text-sm bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
             /{currentPath}
           </div>
         </div>
@@ -461,14 +484,20 @@ export default function FileSystem({ repoUrl }: { repoUrl: string }) {
                           }
                           className="text-blue-600 dark:text-blue-400 hover:underline flex items-center"
                         >
-                          📁 {file.path}
+                          <div className="flex items-center gap-2">
+                            <FolderIcon className="h-4 w-4" />{" "}
+                            <span>{file.path}</span>
+                          </div>
                         </button>
                       ) : (
                         <button
                           onClick={() => viewFile(file.path)}
                           className="text-gray-800 dark:text-gray-200 hover:underline flex items-center"
                         >
-                          📄 {file.path}
+                          <div className="flex items-center gap-2">
+                            <FileIcon className="h-4 w-4" />{" "}
+                            <span>{file.path}</span>
+                          </div>
                         </button>
                       )}
                     </td>
@@ -476,7 +505,11 @@ export default function FileSystem({ repoUrl }: { repoUrl: string }) {
                       {file.type === "tree" ? "Directory" : "File"}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                      {formatSize(file.size)}
+                      {file.type === "tree" ? (
+                        <div className="h-px w-2 bg-border" />
+                      ) : (
+                        formatSize(file.size)
+                      )}
                     </td>
                   </tr>
                 ))
@@ -560,7 +593,7 @@ export default function FileSystem({ repoUrl }: { repoUrl: string }) {
     <div className="h-full overflow-hidden flex flex-col">
       <div className="overflow-y-auto flex-1">
         {renderFileList()}
-        {selectedFile && renderFileContent()}
+        {selectedFile ? renderFileContent() : null}
       </div>
     </div>
   );
@@ -569,3 +602,5 @@ export default function FileSystem({ repoUrl }: { repoUrl: string }) {
 // Import needed for Markdown rendering
 import { Markdown } from "./ui/markdown";
 import { useCurrentRepo } from "./app-wrapper";
+import { ArrowLeftIcon, FileIcon, FolderIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
