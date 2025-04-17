@@ -42,32 +42,31 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-white flex flex-col items-center justify-center p-4 relative">
       <div className="flex flex-[1]" />
-      <div className="w-full max-w-lg mx-auto flex flex-col items-center">
+      <div className="w-full max-w-lg px-4 sm:px-0 mx-auto flex flex-col items-center">
         {/* Logo */}
         <div className="w-32 h-32 mb-2">
           <Image src={LogoSvg} alt="Adorable Logo" width={128} height={128} />
         </div>
 
         {/* Title */}
-        <h1 className="text-6xl md:text-7xl font-bold text-center mb-4">
+        <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-center mb-4">
           Adorable
         </h1>
 
         {/* Subtitle */}
-        <p className="text-xl md:text-2xl text-gray-600 text-center mb-6">
+        <p className="text-lg sm:text-xl md:text-2xl text-gray-600 text-center mb-6">
           Open Source AI App Builder
         </p>
 
         {/* Prompt Input */}
-        <div className="w-full relative m-5">
+        <div className="w-full relative my-5">
           {isMounted && (
-            <div className="absolute inset-0 -top-2 -bottom-2 -left-2 -right-2">
+            <div className="absolute inset-0 -top-2 -bottom-2 -left-0 -right-0 sm:-left-2 sm:-right-2">
               <GlowEffect
-                // blur="stronger"
+                blur="soft"
                 scale={1}
                 mode="breathe"
                 colors={["#03001e", "#7303c0", "#ec38bc", "#fdeff9"]}
-                // colors={["#3357FF", "#33B6FF", "#33FFE0"]}
                 duration={7}
               />
             </div>
@@ -152,7 +151,7 @@ export default function Home() {
         href="https://style.dev"
         target="_blank"
         rel="noopener noreferrer"
-        className="absolute bottom-4 right-4 px-3 py-1.5 text-sm font-medium border border-gray-300 rounded-full hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 flex items-center gap-1"
+        className="fixed bottom-4 right-4 px-3 py-1.5 text-xs sm:text-sm font-medium border border-gray-300 rounded-full bg-white/80 backdrop-blur-sm hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 flex items-center gap-1 shadow-sm"
       >
         Built on Freestyle
       </a>
