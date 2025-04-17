@@ -9,9 +9,24 @@ import LogoSvg from "@/logo.svg";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import { ChatContainer } from "./ui/chat-container";
+// import { ADORABLE_TOOLS } from "@/lib/tools";
+import { Message } from "ai";
 
-export default function Chat(props: { appId: string }) {
+export default function Chat(props: {
+  appId: string;
+  initialMessages: Message[];
+}) {
+  console.log(
+    "Chat",
+    props.appId,
+    props.initialMessages,
+    props.initialMessages[0]
+  );
   const { messages, handleSubmit, input, handleInputChange, status } = useChat({
+    initialMessages: props.initialMessages,
+    generateId: () => {
+      return "x-" + crypto.randomUUID();
+    },
     headers: {
       "Adorable-App-Id": props.appId,
     },

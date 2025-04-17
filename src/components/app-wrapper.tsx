@@ -5,15 +5,19 @@ import { TopBar } from "./topbar";
 import PreviewControls from "./preview-controls";
 import Chat from "./chat";
 import Preview from "./preview";
+import { Message } from "ai";
 
 export default function AppWrapper({
   appName,
   repo,
+  initialMessages,
+
   appId,
 }: {
   appName: string;
   repo: string;
   appId: string;
+  initialMessages: Message[];
 }) {
   const [activeView, setActiveView] = useState<"web" | "files">("web");
 
@@ -24,7 +28,7 @@ export default function AppWrapper({
       </TopBar>
       <div className="grid grid-cols-[1fr_2fr] overflow-hidden">
         <div className="border-r overflow-auto">
-          <Chat appId={appId} />
+          <Chat appId={appId} initialMessages={initialMessages} />
         </div>
         <div className="overflow-auto">
           <Preview activeView={activeView} repo={repo} />

@@ -1,5 +1,6 @@
 "use server";
 
+import { convertToUIMessages } from "@/components/convertToUI";
 import { appsTable, messagesTable } from "@/db/schema";
 import { db } from "@/lib/db";
 import { asc, eq } from "drizzle-orm";
@@ -21,8 +22,10 @@ export async function getApp(id: string) {
     .where(eq(messagesTable.appId, appInfo.id))
     .orderBy(asc(messagesTable.createdAt));
 
+  const msgs = convertToUIMessages(messages.map((m) => m.message));
+  console.log("Messages", msgs);
   return {
     info: appInfo,
-    messages,
+    messages: msgs,
   };
 }
