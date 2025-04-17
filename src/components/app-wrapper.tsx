@@ -19,6 +19,7 @@ export default function AppWrapper({
     <div className="h-screen grid grid-rows-[48px_1fr] grid-cols-1">
       <TopBar appName={appName}>
         <PreviewControls onModeChange={setActiveView} />
+        {repo}
       </TopBar>
       <div className="grid grid-cols-[1fr_2fr] overflow-hidden">
         <div className="border-r overflow-auto">
