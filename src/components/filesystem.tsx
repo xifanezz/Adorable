@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import path from "path";
+import git from "isomorphic-git";
+import { fs } from "@/lib/fs";
+import http from "isomorphic-git/http/web";
 
 interface FileItem {
   path: string;
@@ -25,7 +28,143 @@ interface FileContent {
   };
 }
 
-export default function FileSystem() {
+// Get repo directory name from URL
+function getRepoDirName(repoUrl: string): string {
+  // Extract repo name from URL - last part before .git or just the last part
+  const repoName = repoUrl.split("/").pop()?.replace(".git", "") || "repo";
+  // Add timestamp to make it unique
+  return `${repoName}-${Date.now()}`;
+}
+
+async function ensureRepoCloned(repoUrl: string) {
+  const dir = getRepoDirName(repoUrl);
+  const isRepoCloned = await fs.promises
+    .stat(dir)
+    .then(() => true)
+    .catch(() => false);
+
+  if (!isRepoCloned) {
+    await cloneRepo(repoUrl);
+  }
+}
+
+async function cloneRepo(url: string) {
+  const dir = getRepoDirName(url);
+  await git.clone({
+    url: url,
+    fs,
+    http,
+    dir,
+  });
+}
+
+// Function to recursively read directory and files
+async function processDirectory(
+  dirPath: string,
+  relativeDir: string = "",
+): Promise<Record<string, any>> {
+  const entries = await fs.promises.readdir(dirPath);
+
+  const files = await Promise.all(
+    entries
+      .filter((entry) => entry !== ".git")
+      .map(async (entry) => {
+        const fullPath = path.join(dirPath, entry);
+        const relativePath = relativeDir
+          ? path.join(relativeDir, entry)
+          : entry;
+
+        const entryInfo = await fs.promises.stat(fullPath);
+
+        if (entryInfo.type == "dir") {
+          // Recursively process subdirectories
+          return await processDirectory(fullPath, relativePath);
+        } else {
+          const filesRecord: Record<string, any> = {};
+
+          // Process files
+          try {
+            const fileInfo: any = {
+              size: entryInfo.size,
+              type: "file",
+              path: relativePath,
+            };
+
+            // For small text files, include content directly
+            if (entryInfo.size < 500000) {
+              // 500KB limit
+              try {
+                const content = await fs.promises.readFile(fullPath, "utf8");
+                fileInfo.content = content;
+              } catch {
+                // If UTF-8 fails, it might be binary
+                fileInfo.isBinary = true;
+              }
+            } else {
+              fileInfo.isLarge = true;
+            }
+
+            // Save file info to record
+            filesRecord[relativePath] = fileInfo;
+          } catch (fileError) {
+            console.warn(`Error processing file ${relativePath}:`, fileError);
+            filesRecord[relativePath] = { error: "Failed to process file" };
+          }
+
+          return filesRecord;
+        }
+      }),
+  ).then((records) =>
+    records.reduce((acc, record) => ({ ...acc, ...record }), {}),
+  );
+
+  return files;
+}
+
+async function getRepoInfo(repoDir: string) {
+  // Get git info about the repo
+  const currentBranch = await git.currentBranch({
+    fs,
+    dir: repoDir,
+    fullname: true,
+  });
+  if (!currentBranch) {
+    throw new Error("Detected detached HEAD");
+  }
+
+  const latestCommit = await git
+    .log({
+      fs,
+      dir: repoDir,
+      ref: currentBranch,
+      depth: 1,
+    })
+    .then((logs) => logs.at(0));
+
+  const repoInfo = {
+    branch: currentBranch,
+    commit: latestCommit
+      ? {
+          hash: latestCommit?.oid,
+          message: latestCommit?.commit.message,
+          author: latestCommit?.commit.author.name,
+          timestamp: latestCommit?.commit.author.timestamp,
+        }
+      : undefined,
+  };
+
+  // Process all files in the repository
+  const filesRecord = await processDirectory(repoDir);
+  console.log(`Processed ${Object.keys(filesRecord).length} files`);
+
+  return {
+    files: filesRecord,
+    repo: repoInfo,
+    clonedAt: new Date().toISOString(),
+  };
+}
+
+export default function FileSystem({ repoUrl }: { repoUrl: string }) {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,82 +178,63 @@ export default function FileSystem() {
     setError(null);
 
     try {
-      const response = await fetch("/api/git/files", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          repoUrl:
-            "https://92062196-4509-4157-9111-cada6bdd8837:5U5MHmSiqFjUoNVP.K7Y5z62ZcTyhVZDV@git.freestyle.it.com/d93a8af8-663c-4413-b127-39b32bec2466",
-        }),
-      });
+      const data = await getRepoInfo(repoUrl);
 
-      if (!response.ok) {
-        throw new Error(`Error fetching files: ${response.status}`);
-      }
+      // Convert the files record to an array for the current path
+      const allFiles = data.files || {};
+      const filesList: FileItem[] = [];
 
-      const data = await response.json();
+      // Get files and directories at the current path
+      const pathPrefix = currentPath ? currentPath + "/" : "";
+      const pathSegmentsCount = currentPath.split("/").filter(Boolean).length;
 
-      if (data.error) {
-        setError(data.error);
-      } else {
-        // Convert the files record to an array for the current path
-        const allFiles = data.files || {};
-        const filesList: FileItem[] = [];
-
-        // Get files and directories at the current path
-        const pathPrefix = currentPath ? currentPath + "/" : "";
-        const pathSegmentsCount = currentPath.split("/").filter(Boolean).length;
-
-        // Process each file path
-        Object.entries(allFiles).forEach(
-          ([filePath, fileInfo]: [string, any]) => {
-            // Skip files not in the current directory
-            if (!currentPath && filePath.includes("/")) {
-              // Root directory - only show top-level files and directories
-              const topLevelName = filePath.split("/")[0];
-              if (!filesList.find((f) => f.path === topLevelName)) {
-                filesList.push({
-                  path: topLevelName,
-                  type: "tree",
-                  size: 0,
-                });
-              }
-              return;
-            } else if (currentPath && !filePath.startsWith(pathPrefix)) {
-              // Not in the current directory
-              return;
-            }
-
-            // For directory listings, we only want direct children
-            const remainingPath = filePath.substring(pathPrefix.length);
-            if (remainingPath.includes("/")) {
-              // This is a nested file, only add the directory
-              const dirName = remainingPath.split("/")[0];
-              if (!filesList.find((f) => f.path === dirName)) {
-                filesList.push({
-                  path: dirName,
-                  type: "tree",
-                  size: 0,
-                });
-              }
-            } else if (remainingPath) {
-              // This is a file in the current directory
+      // Process each file path
+      Object.entries(allFiles).forEach(
+        ([filePath, fileInfo]: [string, any]) => {
+          // Skip files not in the current directory
+          if (!currentPath && filePath.includes("/")) {
+            // Root directory - only show top-level files and directories
+            const topLevelName = filePath.split("/")[0];
+            if (!filesList.find((f) => f.path === topLevelName)) {
               filesList.push({
-                path: remainingPath,
-                type: "blob",
-                size: fileInfo.size,
-                content: fileInfo.content,
-                contentType: getContentType(remainingPath),
-                encoding: "utf-8",
+                path: topLevelName,
+                type: "tree",
+                size: 0,
               });
             }
+            return;
+          } else if (currentPath && !filePath.startsWith(pathPrefix)) {
+            // Not in the current directory
+            return;
           }
-        );
 
-        setFiles(filesList);
-      }
+          // For directory listings, we only want direct children
+          const remainingPath = filePath.substring(pathPrefix.length);
+          if (remainingPath.includes("/")) {
+            // This is a nested file, only add the directory
+            const dirName = remainingPath.split("/")[0];
+            if (!filesList.find((f) => f.path === dirName)) {
+              filesList.push({
+                path: dirName,
+                type: "tree",
+                size: 0,
+              });
+            }
+          } else if (remainingPath) {
+            // This is a file in the current directory
+            filesList.push({
+              path: remainingPath,
+              type: "blob",
+              size: fileInfo.size,
+              content: fileInfo.content,
+              contentType: getContentType(remainingPath),
+              encoding: "utf-8",
+            });
+          }
+        },
+      );
+
+      setFiles(filesList);
     } catch (err) {
       console.error("Error fetching repository files:", err);
       setError(err instanceof Error ? err.message : "Unknown error occurred");
@@ -323,7 +443,7 @@ export default function FileSystem() {
                             navigateToFolder(
                               currentPath
                                 ? `${currentPath}/${file.path}`
-                                : file.path
+                                : file.path,
                             )
                           }
                           className="text-blue-600 dark:text-blue-400 hover:underline flex items-center"
