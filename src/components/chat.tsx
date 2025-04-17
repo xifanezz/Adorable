@@ -5,7 +5,7 @@ import { PromptInputBasic } from "./chatinput";
 import { Markdown } from "./ui/markdown";
 import { ChangeEvent } from "react";
 import Image from "next/image";
-import LogoSvg from "@/public/logo.svg";
+import LogoSvg from "@/logo.svg";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -43,7 +43,7 @@ export default function Chat() {
               <div
                 className={cn(
                   "flex flex-row items-center gap-2",
-                  message.role === "user" ? "justify-end" : "justify-start",
+                  message.role === "user" ? "justify-end" : "justify-start"
                 )}
               >
                 {message.role === "user" ? null : (
@@ -72,7 +72,7 @@ export default function Chat() {
                       <motion.p
                         className={cn(
                           "text-xs font-medium text-gray-500",
-                          index === messages.length - 1 ? "" : "mb-2",
+                          index === messages.length - 1 ? "" : "mb-2"
                         )}
                         layout="position"
                         layoutId={`name-${message.id}`}
@@ -96,13 +96,13 @@ export default function Chat() {
                   "flex flex-col gap-1 pt-2",
                   message.role === "user"
                     ? ""
-                    : "rounded-tr-lg rounded-bl-lg rounded-br-lg bg-muted border border-border z-10",
+                    : "rounded-tr-lg rounded-bl-lg rounded-br-lg bg-muted border border-border z-10"
                 )}
               >
                 <div
                   className={cn(
                     "prose-container",
-                    message.role === "user" ? "ml-auto " : "mr-auto px-2.5",
+                    message.role === "user" ? "ml-auto " : "mr-auto px-2.5"
                   )}
                 >
                   {Array.isArray(message.parts) ? (

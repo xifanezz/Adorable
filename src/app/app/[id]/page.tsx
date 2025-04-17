@@ -1,8 +1,7 @@
 "use server";
 
 import { getApp } from "@/actions/get-app";
-import Chat from "../../../components/chat";
-import Preview from "../../../components/preview";
+import AppWrapper from "../../../components/app-wrapper";
 import { redirect } from "next/navigation";
 
 export default async function IdPage({ params }: { params: { id: string } }) {
@@ -12,14 +11,5 @@ export default async function IdPage({ params }: { params: { id: string } }) {
     redirect("/");
   }
 
-  return (
-    <div className="flex min-h-screen">
-      <div className="w-1/3 border-r ">
-        <Chat />
-      </div>
-      <div className="w-2/3 px-4 pt-4">
-        <Preview repo={app?.gitRepo} />
-      </div>
-    </div>
-  );
+  return <AppWrapper appName={app.name} repo={app.gitRepo} />;
 }
