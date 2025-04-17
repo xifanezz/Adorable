@@ -2,20 +2,14 @@
 
 import { useChat } from "@ai-sdk/react";
 import { useState } from "react";
-import { Markdown } from "./ui/markdown";
 import FileSystem from "./filesystem";
 import WebView from "./webview";
 
 export default function Preview(props: { repo: string }) {
-  const { messages } = useChat({
+  useChat({
     api: "/api/chat",
   });
   const [activeView, setActiveView] = useState<"files" | "web">("files");
-
-  // Get the last assistant message
-  const lastAssistantMessage = [...messages]
-    .reverse()
-    .find((message) => message.role === "assistant");
 
   const renderToggle = () => {
     return (
@@ -48,7 +42,14 @@ export default function Preview(props: { repo: string }) {
     <div className="h-full pt-4 overflow-y-auto p-6 relative">
       {renderToggle()}
 
-      {activeView === "files" ? <FileSystem /> : <WebView repo={props.repo} />}
+      <div className="grid grid-cols-1 grid-rows-1 w-full h-full">
+        <div className="col-start-1 row-start-1" style={{ visibility: activeView === "files" ? "visible" : "hidden" }}>
+          <FileSystem />
+        </div>
+        <div className="col-start-1 row-start-1" style={{ visibility: activeView === "web" ? "visible" : "hidden" }}>
+          <WebView repo={props.repo} />
+        </div>
+      </div>
     </div>
   );
 }
