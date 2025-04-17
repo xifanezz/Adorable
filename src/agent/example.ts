@@ -47,13 +47,13 @@ async function runExample() {
     onLastResponseId: handleLastResponseId,
   });
 
-  // Example input (in a real app, this would come from an LLM)
+  // Example input with an apply_patch command
   const input = [
     {
       type: 'function_call',
-      call_id: 'example-call-1',
+      call_id: 'example-apply-patch',
       arguments: JSON.stringify({
-        command: ['echo', 'Hello from the agent system!'],
+        cmd: ['apply_patch', '*** Begin Patch\n*** Add File: example.txt\n+This is an example file\n*** End Patch'],
         workdir: process.cwd(),
       }),
     }
@@ -68,13 +68,13 @@ async function runExample() {
     agent.cancel();
   }, 5000);
 
-  // Run another command
+  // Example of an unsupported command (will be rejected)
   const input2 = [
     {
       type: 'function_call',
-      call_id: 'example-call-2',
+      call_id: 'example-unsupported',
       arguments: JSON.stringify({
-        command: ['ls', '-la'],
+        cmd: ['ls', '-la'],
         workdir: process.cwd(),
       }),
     }
@@ -82,7 +82,7 @@ async function runExample() {
 
   // Wait a bit then run the second command
   setTimeout(async () => {
-    console.log('Running second command...');
+    console.log('Running second command (will be rejected)...');
     await agent.run(input2);
     
     // Finally, terminate the agent

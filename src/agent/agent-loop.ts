@@ -1,9 +1,10 @@
-import type { ReviewDecision } from "./review.js";
+import { ReviewDecision } from "./review.js";
 import type { AppConfig, ApplyPatchCommand, ApprovalPolicy, ResponseFunctionToolCall, ResponseInputItem, ResponseItem } from "./types.js";
 
 import { log, isLoggingEnabled } from "./log.js";
-import { handleExecCommand } from "./handle-exec-command.js";
+import { process_patch } from "./apply-patch.js";
 import { randomUUID } from "node:crypto";
+import * as fs from "fs";
 
 // Timeout for rate limit retries
 const RATE_LIMIT_RETRY_WAIT_MS = 2500;
@@ -50,7 +51,7 @@ export class AgentLoop {
    * after the user has canceled and issued a new command. */
   private generation = 0;
   
-  /** AbortController for in‑progress tool calls (e.g. shell commands). */
+  /** AbortController for in‑progress tool calls (e.g. apply patch commands). */
   private execAbortController: AbortController | null = null;
   
   /** Set to true when `cancel()` is called so `run()` can exit early. */
@@ -173,7 +174,7 @@ export class AgentLoop {
     this.onLoading = onLoading;
     this.getCommandConfirmation = getCommandConfirmation;
     this.onLastResponseId = onLastResponseId;
-    this.sessionId = randomUUID().replaceAll("-", "");
+    this.sessionId = randomUUID().replace(/-/g, "");
 
     this.hardAbort = new AbortController();
 
@@ -182,6 +183,71 @@ export class AgentLoop {
       () => this.execAbortController?.abort(),
       { once: true },
     );
+  }
+
+  /**
+   * Process apply patch command with user confirmation
+   */
+  private async handleApplyPatch(
+    command: Array<string>,
+    patchText: string,
+  ): Promise<{
+    outputText: string;
+    metadata: { exit_code: number; duration_seconds: number };
+    additionalItems?: Array<ResponseInputItem>;
+  }> {
+    // Ask for user confirmation
+    const { review: decision, customDenyMessage } = await this.getCommandConfirmation(
+      command,
+      { patch: patchText },
+    );
+
+    // Any decision other than an affirmative (YES / ALWAYS) aborts execution.
+    if (decision !== ReviewDecision.YES && decision !== ReviewDecision.ALWAYS) {
+      const note =
+        decision === ReviewDecision.NO_CONTINUE
+          ? customDenyMessage?.trim() || "No, don't do that — keep going though."
+          : "No, don't do that — stop for now.";
+      return {
+        outputText: "aborted",
+        metadata: { exit_code: 1, duration_seconds: 0 },
+        additionalItems: [
+          {
+            type: "message",
+            role: "user",
+            content: [{ type: "input_text", text: note }],
+          },
+        ],
+      };
+    }
+
+    // Process the patch
+    try {
+      const start = Date.now();
+      
+      const result = process_patch(
+        patchText,
+        (p) => fs.readFileSync(p, "utf8"),
+        (p, c) => fs.writeFileSync(p, c, "utf8"),
+        (p) => fs.unlinkSync(p),
+      );
+      
+      const duration = Date.now() - start;
+      
+      return {
+        outputText: result,
+        metadata: {
+          exit_code: 0,
+          duration_seconds: Math.round(duration / 100) / 10,
+        },
+      };
+    } catch (error: unknown) {
+      const stderr = String((error as Error).message ?? error);
+      return {
+        outputText: stderr,
+        metadata: { exit_code: 1, duration_seconds: 0 },
+      };
+    }
   }
 
   private async handleFunctionCall(
@@ -223,24 +289,29 @@ export class AgentLoop {
     // used to tell model to stop if needed
     const additionalItems: Array<ResponseInputItem> = [];
 
-    // For simplicity, we only support shell or container.exec commands
-    if (name === "container.exec" || name === "shell") {
+    // We only support apply_patch commands now
+    if ((name === "container.exec" || name === "shell") && args.cmd) {
       try {
-        const {
-          outputText,
-          metadata,
-          additionalItems: additionalItemsFromExec,
-        } = await handleExecCommand(
-          args,
-          this.config,
-          this.approvalPolicy,
-          this.getCommandConfirmation,
-          this.execAbortController?.signal,
-        );
-        outputItem.output = JSON.stringify({ output: outputText, metadata });
+        // Check if this is an apply_patch command
+        if (args.cmd[0] === "apply_patch" && args.cmd.length === 2) {
+          const patchText = args.cmd[1];
+          const {
+            outputText,
+            metadata,
+            additionalItems: additionalItemsFromExec,
+          } = await this.handleApplyPatch(args.cmd, patchText);
+          
+          outputItem.output = JSON.stringify({ output: outputText, metadata });
 
-        if (additionalItemsFromExec) {
-          additionalItems.push(...additionalItemsFromExec);
+          if (additionalItemsFromExec) {
+            additionalItems.push(...additionalItemsFromExec);
+          }
+        } else {
+          // Unsupported command
+          outputItem.output = JSON.stringify({ 
+            output: "Only apply_patch commands are supported.",
+            metadata: { exit_code: 1, duration_seconds: 0 },
+          });
         }
       } catch (error) {
         outputItem.output = JSON.stringify({

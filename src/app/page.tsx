@@ -63,7 +63,7 @@ export default function Home() {
           {isMounted && (
             <div className="absolute inset-0 -top-2 -bottom-2 -left-0 -right-0 sm:-left-2 sm:-right-2">
               <GlowEffect
-                blur="soft"
+                blur="medium"
                 scale={1}
                 mode="breathe"
                 colors={["#03001e", "#7303c0", "#ec38bc", "#fdeff9"]}
@@ -74,7 +74,7 @@ export default function Home() {
           {/* Adaptable width container */}
           <div className="relative w-full max-w-full overflow-hidden">
             {/* Custom input wrapper with adaptive width */}
-            <div className="w-full bg-white/90 shadow-lg rounded-md relative z-10">
+            <div className="w-full bg-white/90 shadow-lg rounded-md relative z-10 border transition-colors focus:border-gray-400">
               <PromptInput
                 isLoading={isLoading}
                 value={prompt}
@@ -84,13 +84,13 @@ export default function Home() {
               >
                 <PromptInputTextarea
                   placeholder="Describe the app you want to build..."
-                  className="min-h-[100px] w-full bg-transparent backdrop-blur-sm pr-12"
+                  className="min-h-[100px] w-full bg-transparent backdrop-blur-sm pr-12 "
                 />
                 <PromptInputActions className="justify-end">
                   {/* No visible content here */}
                 </PromptInputActions>
               </PromptInput>
-              
+
               {/* Absolutely positioned submit button */}
               <div className="absolute right-3 bottom-3 z-20">
                 <Button

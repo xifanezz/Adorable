@@ -5,13 +5,6 @@ export { ReviewDecision } from './review.js';
 // Export utility functions
 export { log, isLoggingEnabled } from './log.js';
 
-// Export sandbox types
-export { SandboxType } from './sandbox/interface.js';
-export type { ExecInput, ExecResult } from './sandbox/interface.js';
-
-// Export exec utilities
-export { exec, execApplyPatch, formatCommandForDisplay } from './exec.js';
-
 // Export patch utilities
 export { 
   process_patch, 
