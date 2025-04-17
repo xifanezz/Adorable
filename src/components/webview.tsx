@@ -1,13 +1,18 @@
 "use client";
 
 import { FreestyleDevServer } from "@/freestyle-sdk/repo-preview";
+import { Safari } from "./magicui/safari";
 
 export default function WebView(props: { repo: string }) {
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex-grow w-full">
+    <div className="flex flex-col h-full overflow-hidden">
+      <Safari 
+        mode="simple" 
+        url="Preview" 
+        className="h-full w-full"
+      >
         <FreestyleDevServer repo={props.repo} />
-      </div>
+      </Safari>
     </div>
   );
 }

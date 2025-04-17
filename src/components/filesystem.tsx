@@ -424,9 +424,11 @@ export default function FileSystem() {
   };
 
   return (
-    <div className="h-full overflow-y-auto">
-      {renderFileList()}
-      {selectedFile && renderFileContent()}
+    <div className="h-full overflow-hidden flex flex-col">
+      <div className="overflow-y-auto flex-1">
+        {renderFileList()}
+        {selectedFile && renderFileContent()}
+      </div>
     </div>
   );
 }
