@@ -21,7 +21,7 @@ export default async function IdPage({
     <AppWrapper
       appName={app.info.name}
       repo={process.env.GIT_ROOT + app.info.gitRepo}
-      appId={params.id}
+      appId={app.info.id}
     />
   );
 }
