@@ -28,33 +28,37 @@ interface FileContent {
   };
 }
 
-// Get repo directory name from URL
-function getRepoDirName(repoUrl: string): string {
-  // Extract repo name from URL - last part before .git or just the last part
-  const repoName = repoUrl.split("/").pop()?.replace(".git", "") || "repo";
-  // Add timestamp to make it unique
-  return `${repoName}-${Date.now()}`;
-}
-
-async function ensureRepoCloned(repoUrl: string) {
-  const dir = getRepoDirName(repoUrl);
+async function ensureRepoCloned({
+  repoId,
+  repoUrl,
+}: {
+  repoId: string;
+  repoUrl: string;
+}) {
+  const dir = `/${repoId}`;
   const isRepoCloned = await fs.promises
     .stat(dir)
     .then(() => true)
     .catch(() => false);
 
   if (!isRepoCloned) {
-    await cloneRepo(repoUrl);
+    await cloneRepo({ repoId, repoUrl });
   }
 }
 
-async function cloneRepo(url: string) {
-  const dir = getRepoDirName(url);
+async function cloneRepo({
+  repoId,
+  repoUrl,
+}: {
+  repoId: string;
+  repoUrl: string;
+}) {
   await git.clone({
-    url: url,
+    url: repoUrl,
     fs,
     http,
-    dir,
+    dir: `/${repoId}`,
+    ref: "HEAD",
   });
 }
 
@@ -121,7 +125,10 @@ async function processDirectory(
   return files;
 }
 
-async function getRepoInfo(repoDir: string) {
+async function getRepoInfo(props: { repoId: string; repoUrl: string }) {
+  await ensureRepoCloned(props);
+  const repoDir = `/${props.repoId}`;
+
   // Get git info about the repo
   const currentBranch = await git.currentBranch({
     fs,
@@ -173,12 +180,18 @@ export default function FileSystem({ repoUrl }: { repoUrl: string }) {
   const [fileContent, setFileContent] = useState<FileContent | null>(null);
   const [loadingContent, setLoadingContent] = useState(false);
 
+  const repoId = useCurrentRepo();
+
   const fetchRepoFiles = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const data = await getRepoInfo(repoUrl);
+      console.log(`Repository URL: ${repoUrl}`);
+      const data = await getRepoInfo({
+        repoId,
+        repoUrl,
+      });
 
       // Convert the files record to an array for the current path
       const allFiles = data.files || {};
@@ -555,3 +568,4 @@ export default function FileSystem({ repoUrl }: { repoUrl: string }) {
 
 // Import needed for Markdown rendering
 import { Markdown } from "./ui/markdown";
+import { useCurrentRepo } from "./app-wrapper";

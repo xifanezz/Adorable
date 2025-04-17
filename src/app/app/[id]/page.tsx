@@ -24,6 +24,7 @@ export default async function IdPage({
       initialMessages={app.messages}
       repo={process.env.GIT_ROOT + app.info.gitRepo}
       appId={app.info.id}
+      repoId={app.info.gitRepo}
     />
   );
 }

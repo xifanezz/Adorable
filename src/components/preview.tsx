@@ -18,7 +18,7 @@ export default function Preview(props: { repo: string; activeView: string }) {
             visibility: props.activeView === "files" ? "visible" : "hidden",
           }}
         >
-          <FileSystem repoUrl={`https://git.freestyle.sh/${props.repo}`} />
+          <FileSystem repoUrl={props.repo} />
         </div>
         <div
           className="col-start-1 row-start-1"
