@@ -10,8 +10,11 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import { ChatContainer } from "./ui/chat-container";
 
-export default function Chat() {
+export default function Chat(props: { appId: string }) {
   const { messages, handleSubmit, input, handleInputChange, status } = useChat({
+    headers: {
+      "Adorable-App-Id": props.appId,
+    },
     api: "/api/chat",
   });
 

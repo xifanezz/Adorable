@@ -11,8 +11,12 @@ export default async function IdPage({ params }: { params: { id: string } }) {
     redirect("/");
   }
 
-  console.log("Git Repo", app.gitRepo);
+  console.log("Git Repo", app.info.gitRepo);
   return (
-    <AppWrapper appName={app.name} repo={process.env.GIT_ROOT + app.gitRepo} />
+    <AppWrapper
+      appName={app.info.name}
+      repo={process.env.GIT_ROOT + app.info.gitRepo}
+      appId={params.id}
+    />
   );
 }

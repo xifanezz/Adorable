@@ -1,8 +1,8 @@
 "use server";
 
-import { appsTable } from "@/db/schema";
+import { appsTable, messagesTable } from "@/db/schema";
 import { db } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 
 export async function getApp(id: string) {
   const app = await db
@@ -13,5 +13,16 @@ export async function getApp(id: string) {
   if (!app) {
     throw new Error("App not found");
   }
-  return app[0];
+  const appInfo = app[0];
+
+  const messages = await db
+    .select()
+    .from(messagesTable)
+    .where(eq(messagesTable.appId, appInfo.id))
+    .orderBy(asc(messagesTable.createdAt));
+
+  return {
+    info: appInfo,
+    messages,
+  };
 }

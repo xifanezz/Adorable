@@ -9,9 +9,11 @@ import Preview from "./preview";
 export default function AppWrapper({
   appName,
   repo,
+  appId,
 }: {
   appName: string;
   repo: string;
+  appId: string;
 }) {
   const [activeView, setActiveView] = useState<"web" | "files">("web");
 
@@ -22,7 +24,7 @@ export default function AppWrapper({
       </TopBar>
       <div className="grid grid-cols-[1fr_2fr] overflow-hidden">
         <div className="border-r overflow-auto">
-          <Chat />
+          <Chat appId={appId} />
         </div>
         <div className="overflow-auto">
           <Preview activeView={activeView} repo={repo} />
