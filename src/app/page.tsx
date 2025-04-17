@@ -40,8 +40,8 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-white flex flex-col items-center justify-center p-4 ">
-      <div className="flex  flex-[1]" />
+    <main className="min-h-screen bg-white flex flex-col items-center justify-center p-4 relative">
+      <div className="flex flex-[1]" />
       <div className="w-full max-w-lg mx-auto flex flex-col items-center">
         {/* Logo */}
         <div className="w-32 h-32 mb-2">
@@ -88,7 +88,7 @@ export default function Home() {
                 {/* No visible content here */}
               </PromptInputActions>
             </PromptInput>
-            
+
             {/* Absolutely positioned submit button */}
             <div className="absolute right-3 bottom-3 z-20">
               <Button
@@ -107,33 +107,55 @@ export default function Home() {
             </div>
           </div>
         </div>
-        
+
         {/* Example pills - moved outside the div with glow */}
         <div className="mt-6">
           <p className="text-center text-xs text-gray-500 mb-2">Examples</p>
           <div className="flex flex-wrap justify-center gap-2">
-          <button 
-            onClick={() => setPrompt("Build a dog food marketplace where users can browse and purchase premium dog food.")}
-            className="px-3 py-1.5 text-sm border border-gray-300 rounded-full hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300"
-          >
-            Dog Food Marketplace
-          </button>
-          <button 
-            onClick={() => setPrompt("Create a personal website with portfolio, blog, and contact sections.")}
-            className="px-3 py-1.5 text-sm border border-gray-300 rounded-full hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300"
-          >
-            Personal Website
-          </button>
-          <button 
-            onClick={() => setPrompt("Build a B2B SaaS for burrito shops to manage inventory, orders, and delivery logistics.")}
-            className="px-3 py-1.5 text-sm border border-gray-300 rounded-full hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300"
-          >
-            Burrito B2B SaaS
-          </button>
+            <button
+              onClick={() =>
+                setPrompt(
+                  "Build a dog food marketplace where users can browse and purchase premium dog food."
+                )
+              }
+              className="px-3 py-1.5 text-sm border border-gray-300 rounded-full hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300"
+            >
+              Dog Food Marketplace
+            </button>
+            <button
+              onClick={() =>
+                setPrompt(
+                  "Create a personal website with portfolio, blog, and contact sections."
+                )
+              }
+              className="px-3 py-1.5 text-sm border border-gray-300 rounded-full hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300"
+            >
+              Personal Website
+            </button>
+            <button
+              onClick={() =>
+                setPrompt(
+                  "Build a B2B SaaS for burrito shops to manage inventory, orders, and delivery logistics."
+                )
+              }
+              className="px-3 py-1.5 text-sm border border-gray-300 rounded-full hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300"
+            >
+              Burrito B2B SaaS
+            </button>
           </div>
         </div>
       </div>
       <div className="flex flex-[3]" />
+
+      {/* Built on Freestyle pill */}
+      <a
+        href="https://style.dev"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="absolute bottom-4 right-4 px-3 py-1.5 text-sm font-medium border border-gray-300 rounded-full hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 flex items-center gap-1"
+      >
+        Built on Freestyle
+      </a>
     </main>
   );
 }
