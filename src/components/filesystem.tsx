@@ -425,7 +425,6 @@ export default function FileSystem() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <h2 className="text-xl font-semibold mb-4">Repository Files</h2>
       {renderFileList()}
       {selectedFile && renderFileContent()}
     </div>
