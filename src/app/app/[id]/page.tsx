@@ -17,7 +17,7 @@ export default async function IdPage({ params }: { params: { id: string } }) {
       <div className="w-1/3 border-r ">
         <Chat />
       </div>
-      <div className="w-2/3 p-4">
+      <div className="w-2/3 px-4 pt-4">
         <Preview repo={app?.gitRepo} />
       </div>
     </div>
