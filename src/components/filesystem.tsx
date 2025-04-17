@@ -180,7 +180,7 @@ export default function FileSystem({ repoUrl }: { repoUrl: string }) {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
 
   const readme = useMemo(() => {
-    if (loadingContent) {
+    if (loading || loadingContent) {
       return null;
     }
     return (
@@ -193,7 +193,7 @@ export default function FileSystem({ repoUrl }: { repoUrl: string }) {
   useEffect(() => {
     if (readme !== null && selectedFile === null) {
       viewFile(readme);
-    } else if (readme === null) {
+    } else if (files.find((f) => f.path === selectedFile) === undefined) {
       setSelectedFile(null);
       setFileContent(null);
     }
