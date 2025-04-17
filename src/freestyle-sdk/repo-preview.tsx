@@ -7,15 +7,55 @@ import { requestDevServer } from "./action";
 
 const queryClient = new QueryClient();
 
-export function FreestyleDevServer({ repo }: { repo: string }) {
+const defaultLoadingComponent = () => {
+  return (
+    <div className="flex items-center justify-center h-full">
+      <div className="loader" />
+    </div>
+  );
+};
+
+const defaultStartingComponent = () => {
+  return (
+    <div className="flex items-center justify-center h-full">
+      <div className="text-gray-500">Starting...</div>
+    </div>
+  );
+};
+
+export function FreestyleDevServer({
+  repo,
+  loadingComponent,
+  startingComponent,
+}: {
+  repo: string;
+  loadingComponent?: React.ReactNode;
+  startingComponent?: React.ReactNode;
+}) {
   return (
     <QueryClientProvider client={queryClient}>
-      <FreestyleDevServerInner repo={repo} />
+      <FreestyleDevServerInner
+        repo={repo}
+        loadingComponent={
+          loadingComponent ? loadingComponent : defaultLoadingComponent()
+        }
+        startingComponent={
+          startingComponent ? startingComponent : defaultStartingComponent()
+        }
+      />
     </QueryClientProvider>
   );
 }
 
-function FreestyleDevServerInner({ repo }: { repo: string }) {
+function FreestyleDevServerInner({
+  repo,
+  loadingComponent,
+  startingComponent,
+}: {
+  repo: string;
+  loadingComponent: React.ReactNode;
+  startingComponent: React.ReactNode;
+}) {
   const { data, isLoading } = useQuery({
     queryKey: ["dev-server", repo],
     queryFn: async () => await requestDevServer({ repo }),
@@ -23,11 +63,11 @@ function FreestyleDevServerInner({ repo }: { repo: string }) {
   });
 
   if (isLoading) {
-    return <div>Creating VM...</div>;
+    return loadingComponent;
   }
 
   if (!data?.devCommandRunning) {
-    return <div>Starting Dev Server...</div>;
+    return startingComponent ?? loadingComponent;
   }
 
   return (

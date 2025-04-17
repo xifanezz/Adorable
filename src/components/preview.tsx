@@ -6,7 +6,7 @@ import { Markdown } from "./ui/markdown";
 import FileSystem from "./filesystem";
 import WebView from "./webview";
 
-export default function Preview() {
+export default function Preview(props: { repo: string }) {
   const { messages } = useChat({
     api: "/api/chat",
   });
@@ -48,7 +48,7 @@ export default function Preview() {
     <div className="h-full pt-4 overflow-y-auto p-6 relative">
       {renderToggle()}
 
-      {activeView === "files" ? <FileSystem /> : <WebView />}
+      {activeView === "files" ? <FileSystem /> : <WebView repo={props.repo} />}
     </div>
   );
 }

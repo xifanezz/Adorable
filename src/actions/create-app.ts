@@ -6,6 +6,7 @@ import { freestyle } from "@/lib/freestyle";
 
 export async function createApp() {
   const repo = await freestyle.createGitRepository("Unnamed App");
+
   const app = await db
     .insert(appsTable)
     .values({
