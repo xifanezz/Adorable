@@ -24,9 +24,7 @@ export async function POST(req: Request) {
 
   // get the last message, if it exists
   const lastMessage = messages.slice(-1)[0];
-  console.log("Last message", lastMessage);
-  const coreLastMessage = convertToCoreMessages([lastMessage])[0];
-  console.log("Core last message", coreLastMessage);
+
   await db
     .insert(messagesTable)
     .values({

@@ -28,6 +28,19 @@ interface FileContent {
   };
 }
 
+type FileInfo =
+  | {
+      size?: number;
+      type?: string;
+      content?: string | Uint8Array;
+      path?: string;
+      isBinary?: boolean;
+      isLarge?: boolean;
+    }
+  | {
+      error: string;
+    };
+
 async function ensureRepoCloned({
   repoId,
   repoUrl,
@@ -64,8 +77,8 @@ async function cloneRepo({
 // Function to recursively read directory and files
 async function processDirectory(
   dirPath: string,
-  relativeDir: string = "",
-): Promise<Record<string, any>> {
+  relativeDir: string = ""
+): Promise<Record<string, FileInfo>> {
   const entries = await fs.promises.readdir(dirPath);
 
   const files = await Promise.all(
@@ -83,11 +96,11 @@ async function processDirectory(
           // Recursively process subdirectories
           return await processDirectory(fullPath, relativePath);
         } else {
-          const filesRecord: Record<string, any> = {};
+          const filesRecord: Record<string, FileInfo> = {};
 
           // Process files
           try {
-            const fileInfo: any = {
+            const fileInfo: Partial<FileInfo> = {
               size: entryInfo.size,
               type: "file",
               path: relativePath,
@@ -116,9 +129,9 @@ async function processDirectory(
 
           return filesRecord;
         }
-      }),
+      })
   ).then((records) =>
-    records.reduce((acc, record) => ({ ...acc, ...record }), {}),
+    records.reduce((acc, record) => ({ ...acc, ...record }), {})
   );
 
   return files;
@@ -186,7 +199,7 @@ export default function FileSystem({ repoUrl }: { repoUrl: string }) {
     return (
       files.find(
         (f) =>
-          f.type === "blob" && (f.path === "README.md" || f.path === "README"),
+          f.type === "blob" && (f.path === "README.md" || f.path === "README")
       )?.path ?? null
     );
   }, [files]);
@@ -218,7 +231,6 @@ export default function FileSystem({ repoUrl }: { repoUrl: string }) {
 
       // Get files and directories at the current path
       const pathPrefix = currentPath ? currentPath + "/" : "";
-      const pathSegmentsCount = currentPath.split("/").filter(Boolean).length;
 
       // Process each file path
       Object.entries(allFiles).forEach(
@@ -263,7 +275,7 @@ export default function FileSystem({ repoUrl }: { repoUrl: string }) {
               encoding: "utf-8",
             });
           }
-        },
+        }
       );
 
       setFiles(filesList);
@@ -420,7 +432,7 @@ export default function FileSystem({ repoUrl }: { repoUrl: string }) {
                 `px-2 py-1 rounded text-sm flex gap-1 justify-center items-center`,
                 currentPath
                   ? "text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                  : "text-gray-400 cursor-not-allowed",
+                  : "text-gray-400 cursor-not-allowed"
               )}
             >
               <ArrowLeftIcon className="h-4 w-4" />
@@ -479,7 +491,7 @@ export default function FileSystem({ repoUrl }: { repoUrl: string }) {
                             navigateToFolder(
                               currentPath
                                 ? `${currentPath}/${file.path}`
-                                : file.path,
+                                : file.path
                             )
                           }
                           className="text-blue-600 dark:text-blue-400 hover:underline flex items-center"
