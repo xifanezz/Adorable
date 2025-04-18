@@ -3,12 +3,12 @@ import { db } from "@/lib/db";
 import { ADORABLE_TOOLS } from "@/lib/tools";
 import { anthropic } from "@ai-sdk/anthropic";
 import {
-  AssistantContent,
-  convertToCoreMessages,
+  appendResponseMessages,
+  createIdGenerator,
   Message,
-  StepResult,
   streamText,
 } from "ai";
+import { sql } from "drizzle-orm";
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -22,40 +22,38 @@ export async function POST(req: Request) {
   const { messages }: { id: string; messages: Array<Message> } =
     await req.json();
 
-  // get the last message, if it exists
-  const lastMessage = messages.slice(-1)[0];
-
-  await db
-    .insert(messagesTable)
-    .values({
-      appId: appId,
-      id: crypto.randomUUID(),
-      createdAt: new Date(),
-      message: convertToCoreMessages([lastMessage])[0],
-    })
-    .returning();
-
-  // We'll use streamText as it's the simplest API for this purpose
   const result = streamText({
     tools: ADORABLE_TOOLS,
     maxSteps: 15,
+    experimental_generateMessageId: createIdGenerator({
+      prefix: "server-",
+    }),
     // onFinish({ response: { messages } }) {},
-    onStepFinish: async ({ response }) => {
-      for (const message of response.messages) {
-        console.log(
-          "Message saved",
-          await db
-            .insert(messagesTable)
-            .values({
-              appId: appId,
+    onFinish: async ({ response }) => {
+      const newMsgs = appendResponseMessages({
+        messages: messages,
+        responseMessages: response.messages,
+      });
 
-              id: message.id,
-              createdAt: new Date(),
-              message,
-            })
-            .returning()
-        );
-      }
+      console.log("New messages", newMsgs);
+      const res = await db
+        .insert(messagesTable)
+        .values(
+          newMsgs.map((message) => ({
+            appId: appId,
+            id: message.id,
+            createdAt: new Date(message.createdAt as unknown as string),
+            message,
+          }))
+        )
+        .onConflictDoUpdate({
+          target: messagesTable.id,
+          set: {
+            message: sql`excluded.message`,
+          },
+        })
+        .returning();
+      console.log("HAVING NOW INSERTED", JSON.stringify(res));
     },
 
     model: anthropic("claude-3-7-sonnet-20250219"),

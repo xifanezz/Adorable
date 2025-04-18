@@ -22,10 +22,10 @@ export async function getApp(id: string) {
     .where(eq(messagesTable.appId, appInfo.id))
     .orderBy(asc(messagesTable.createdAt));
 
-  const msgs = convertToUIMessages(messages.map((m) => m.message));
-  console.log("Messages", msgs);
   return {
     info: appInfo,
-    messages: msgs,
+    messages: messages.map((msg) => {
+      return msg.message;
+    }),
   };
 }

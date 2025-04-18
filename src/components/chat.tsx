@@ -35,7 +35,10 @@ export default function Chat(props: {
     addToolResult,
   } = useChat({
     initialMessages: props.initialMessages,
-
+    generateId: () => {
+      return "bababa-" + crypto.randomUUID();
+    },
+    sendExtraMessageFields: true,
     onToolCall: async (tool) => {
       console.log("Tool called", tool);
       if (tool.toolCall.toolName === "ls") {
@@ -48,12 +51,13 @@ export default function Chat(props: {
               error: e,
             };
           });
-        addToolResult({
+        await addToolResult({
           toolCallId: tool.toolCall.toolCallId,
           result: res,
         });
+
         setEnabled(true);
-        return res;
+        // return res;
       }
     },
     onFinish: async (message) => {

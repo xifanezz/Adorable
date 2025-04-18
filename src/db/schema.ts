@@ -1,6 +1,6 @@
 import { pgTable, text, timestamp, uuid, json } from "drizzle-orm/pg-core";
 
-import type { CoreMessage } from "ai";
+import type { Message } from "ai";
 
 export const appsTable = pgTable("apps", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -16,5 +16,5 @@ export const messagesTable = pgTable("messages", {
   appId: uuid("app_id")
     .notNull()
     .references(() => appsTable.id),
-  message: json("message").notNull().$type<CoreMessage>(),
+  message: json("message").notNull().$type<Message>(),
 });
