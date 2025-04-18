@@ -486,6 +486,7 @@ export default function Chat(props: {
                             <ToolRenderer
                               key={index}
                               toolInvocation={part.toolInvocation}
+                              className="mb-4"
                             />
                           );
                         }
