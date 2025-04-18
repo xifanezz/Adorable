@@ -35,9 +35,7 @@ export default function Chat(props: {
     addToolResult,
   } = useChat({
     initialMessages: props.initialMessages,
-    generateId: () => {
-      return "x-" + crypto.randomUUID();
-    },
+
     onToolCall: async (tool) => {
       console.log("Tool called", tool);
       if (tool.toolCall.toolName === "ls") {
