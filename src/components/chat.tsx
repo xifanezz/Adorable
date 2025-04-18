@@ -18,12 +18,6 @@ export default function Chat(props: {
   appId: string;
   initialMessages: Message[];
 }) {
-  console.log(
-    "Chat",
-    props.appId,
-    props.initialMessages,
-    props.initialMessages[0]
-  );
   const [enabled, setEnabled] = useState(true);
   const filesystemStore = useFilesystemStore();
   const {
@@ -40,13 +34,11 @@ export default function Chat(props: {
     },
     sendExtraMessageFields: true,
     onToolCall: async (tool) => {
-      console.log("Tool called", tool);
       if (tool.toolCall.toolName === "ls") {
         setEnabled(false);
         const res = await filesystemStore
           .ls(tool.toolCall.args as LsSchema)
           .catch((e) => {
-            console.error("Error calling ls tool", e);
             return {
               error: e,
             };
@@ -61,7 +53,6 @@ export default function Chat(props: {
       }
     },
     onFinish: async (message) => {
-      console.log("Message finished", message);
     },
     headers: {
       "Adorable-App-Id": props.appId,

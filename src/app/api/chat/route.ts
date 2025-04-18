@@ -35,7 +35,6 @@ export async function POST(req: Request) {
         responseMessages: response.messages,
       });
 
-      console.log("New messages", newMsgs);
       const res = await db
         .insert(messagesTable)
         .values(
@@ -53,7 +52,6 @@ export async function POST(req: Request) {
           },
         })
         .returning();
-      console.log("HAVING NOW INSERTED", JSON.stringify(res));
     },
 
     model: anthropic("claude-3-7-sonnet-20250219"),
