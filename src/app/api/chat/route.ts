@@ -1,14 +1,7 @@
-import { messagesTable } from "@/db/schema";
-import { db } from "@/lib/db";
+import { saveResponseMessages } from "@/lib/db";
 import { ADORABLE_TOOLS } from "@/lib/tools";
 import { anthropic } from "@ai-sdk/anthropic";
-import {
-  appendResponseMessages,
-  createIdGenerator,
-  Message,
-  streamText,
-} from "ai";
-import { sql } from "drizzle-orm";
+import { createIdGenerator, Message, streamText } from "ai";
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -30,28 +23,11 @@ export async function POST(req: Request) {
     }),
     // onFinish({ response: { messages } }) {},
     onFinish: async ({ response }) => {
-      const newMsgs = appendResponseMessages({
-        messages: messages,
+      await saveResponseMessages({
+        appId,
+        messages,
         responseMessages: response.messages,
       });
-
-      const res = await db
-        .insert(messagesTable)
-        .values(
-          newMsgs.map((message) => ({
-            appId: appId,
-            id: message.id,
-            createdAt: new Date(message.createdAt as unknown as string),
-            message,
-          }))
-        )
-        .onConflictDoUpdate({
-          target: messagesTable.id,
-          set: {
-            message: sql`excluded.message`,
-          },
-        })
-        .returning();
     },
 
     model: anthropic("claude-3-7-sonnet-20250219"),
