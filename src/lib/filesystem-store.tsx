@@ -561,9 +561,6 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
         http,
         dir: repoDir,
 
-        remote: "origin",
-        url: repoUrl,
-
         onAuth: async (_url, auth) => {
           const credentials = await useLocalGitCredentialsStore
             .getState()
