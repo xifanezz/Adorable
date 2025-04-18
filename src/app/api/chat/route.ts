@@ -39,7 +39,6 @@ export async function POST(req: Request) {
   const result = streamText({
     tools: ADORABLE_TOOLS,
     maxSteps: 15,
-    // onFinish({ response: { messages } }) {},
     onStepFinish: async ({ response }) => {
       for (const message of response.messages) {
         console.log(
@@ -48,7 +47,6 @@ export async function POST(req: Request) {
             .insert(messagesTable)
             .values({
               appId: appId,
-
               id: message.id,
               createdAt: new Date(),
               message,
@@ -59,8 +57,33 @@ export async function POST(req: Request) {
     },
 
     model: anthropic("claude-3-7-sonnet-20250219"),
-    system:
-      "You are a helpful assistant who provides concise and accurate responses.",
+    system: `You are a helpful assistant who helps users build web applications. 
+You have the ability to view and modify files in the user's project.
+
+Available tools:
+- ls: List files in a directory
+- readFile: Read the contents of a file
+- applyPatch: Apply changes to files using the OpenAI patch format
+
+When modifying files:
+1. First use ls to understand the file structure
+2. Use readFile to view file contents
+3. Use applyPatch to make changes to files
+
+Your patch format should follow this structure:
+*** Begin Patch
+*** Add File: path/to/new/file
++This is the content of the new file
++With multiple lines if needed
+*** Update File: path/to/existing/file
+ Context line before (keep the space at the beginning)
+-Line to remove (note the minus sign)
++Line to add (note the plus sign)
+ Context line after (keep the space at the beginning)
+*** Delete File: path/to/file/to/delete
+*** End Patch
+
+Always respond in a helpful, concise manner. Provide clear explanations for your code changes.`,
     messages,
   });
 

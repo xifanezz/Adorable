@@ -1,8 +1,3 @@
-import * as fsSync from "fs";
-import * as fs from "fs/promises";
-import * as os from "os";
-import * as path from "path";
-
 interface Logger {
   /** Checking this can be used to avoid constructing a large log message. */
   isLoggingEnabled(): boolean;
@@ -10,40 +5,14 @@ interface Logger {
   log(message: string): void;
 }
 
-class AsyncLogger implements Logger {
-  private queue: Array<string> = [];
-  private isWriting: boolean = false;
-
-  constructor(private filePath: string) {
-    this.filePath = filePath;
-  }
-
+class ConsoleLogger implements Logger {
   isLoggingEnabled(): boolean {
     return true;
   }
 
   log(message: string): void {
-    const entry = `[${now()}] ${message}\n`;
-    this.queue.push(entry);
-    this.maybeWrite();
-  }
-
-  private async maybeWrite(): Promise<void> {
-    if (this.isWriting || this.queue.length === 0) {
-      return;
-    }
-
-    this.isWriting = true;
-    const messages = this.queue.join("");
-    this.queue = [];
-
-    try {
-      await fs.appendFile(this.filePath, messages);
-    } finally {
-      this.isWriting = false;
-    }
-
-    this.maybeWrite();
+    const entry = `[${now()}] ${message}`;
+    console.log(entry);
   }
 }
 
@@ -85,38 +54,8 @@ export function initLogger(): Logger {
     return logger;
   }
 
-  const isMac = process.platform === "darwin";
-  const isWin = process.platform === "win32";
+  logger = new ConsoleLogger();
 
-  // On Mac and Windows, os.tmpdir() returns a user-specifc folder, so prefer
-  // it there. On Linux, use ~/.local/adorable so logs are not world-readable.
-  const logDir =
-    isMac || isWin
-      ? path.join(os.tmpdir(), "adorable")
-      : path.join(os.homedir(), ".local", "adorable");
-  fsSync.mkdirSync(logDir, { recursive: true });
-  const logFile = path.join(logDir, `cli-${now()}.log`);
-  // Write the empty string so the file exists and can be tail'd.
-  fsSync.writeFileSync(logFile, "");
-
-  // Symlink to cli-latest.log on UNIX because Windows is funny about
-  // symlinks.
-  if (!isWin) {
-    const latestLink = path.join(logDir, "cli-latest.log");
-    try {
-      fsSync.symlinkSync(logFile, latestLink, "file");
-    } catch (err: unknown) {
-      const error = err as NodeJS.ErrnoException;
-      if (error.code === "EEXIST") {
-        fsSync.unlinkSync(latestLink);
-        fsSync.symlinkSync(logFile, latestLink, "file");
-      } else {
-        throw err;
-      }
-    }
-  }
-
-  logger = new AsyncLogger(logFile);
   return logger;
 }
 
@@ -127,3 +66,4 @@ export function log(message: string): void {
 export function isLoggingEnabled(): boolean {
   return (logger ?? initLogger()).isLoggingEnabled();
 }
+

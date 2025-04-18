@@ -9,23 +9,78 @@ import LogoSvg from "@/logo.svg";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import { ChatContainer } from "./ui/chat-container";
-// import { ADORABLE_TOOLS } from "@/lib/tools";
 import { Message } from "ai";
 import { useFilesystemStore } from "@/lib/filesystem-store";
-import { LsSchema } from "@/lib/tools";
+import { ApplyPatchSchema, LsSchema, ReadFileSchema } from "@/lib/tools";
+import { ReviewDecision } from "@/agent";
+
+interface PatchApprovalDialogProps {
+  patch: string;
+  onDecision: (decision: ReviewDecision, message?: string) => void;
+}
+
+// Simple approval dialog for patches
+function PatchApprovalDialog({ patch, onDecision }: PatchApprovalDialogProps) {
+  const [customMessage, setCustomMessage] = useState("");
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white dark:bg-gray-900 rounded-lg p-6 max-w-3xl max-h-[80vh] overflow-y-auto">
+        <h2 className="text-xl font-semibold mb-4">Approve Code Changes?</h2>
+        <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded overflow-auto mb-4 max-h-[50vh]">
+          <pre className="whitespace-pre-wrap text-sm">{patch}</pre>
+        </div>
+        <div className="mb-4">
+          <input
+            type="text"
+            placeholder="Optional feedback message"
+            className="w-full p-2 border rounded dark:bg-gray-800 dark:border-gray-700"
+            value={customMessage}
+            onChange={(e) => setCustomMessage(e.target.value)}
+          />
+        </div>
+        <div className="flex justify-end gap-3">
+          <button
+            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+            onClick={() => onDecision(ReviewDecision.NO_EXIT, customMessage)}
+          >
+            Reject & Stop
+          </button>
+          <button
+            className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+            onClick={() => onDecision(ReviewDecision.NO_CONTINUE, customMessage)}
+          >
+            Reject & Continue
+          </button>
+          <button
+            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+            onClick={() => onDecision(ReviewDecision.YES, customMessage)}
+          >
+            Approve
+          </button>
+          <button
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            onClick={() => onDecision(ReviewDecision.ALWAYS, customMessage)}
+          >
+            Always Approve
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Chat(props: {
   appId: string;
   initialMessages: Message[];
 }) {
-  console.log(
-    "Chat",
-    props.appId,
-    props.initialMessages,
-    props.initialMessages[0]
-  );
   const [enabled, setEnabled] = useState(true);
+  const [showPatchDialog, setShowPatchDialog] = useState(false);
+  const [currentPatch, setCurrentPatch] = useState("");
+  const [pendingToolCall, setPendingToolCall] = useState<any>(null);
+  
   const filesystemStore = useFilesystemStore();
+  
   const {
     messages,
     handleSubmit,
@@ -38,22 +93,83 @@ export default function Chat(props: {
 
     onToolCall: async (tool) => {
       console.log("Tool called", tool);
+      
       if (tool.toolCall.toolName === "ls") {
         setEnabled(false);
-        const res = await filesystemStore
-          .ls(tool.toolCall.args as LsSchema)
-          .catch((e) => {
-            console.error("Error calling ls tool", e);
-            return {
-              error: e,
-            };
+        try {
+          const res = await filesystemStore
+            .ls(tool.toolCall.args as LsSchema)
+            .catch((e) => {
+              console.error("Error calling ls tool", e);
+              return {
+                error: e.message || String(e),
+              };
+            });
+          
+          addToolResult({
+            toolCallId: tool.toolCall.toolCallId,
+            result: res,
           });
-        addToolResult({
-          toolCallId: tool.toolCall.toolCallId,
-          result: res,
-        });
-        setEnabled(true);
-        return res;
+          
+          return res;
+        } finally {
+          setEnabled(true);
+        }
+      }
+      
+      if (tool.toolCall.toolName === "readFile") {
+        setEnabled(false);
+        try {
+          const { path } = tool.toolCall.args as ReadFileSchema;
+          const content = await filesystemStore.readFile(path);
+          
+          const result = content || `Error: File not found or cannot be read: ${path}`;
+          
+          addToolResult({
+            toolCallId: tool.toolCall.toolCallId,
+            result,
+          });
+          
+          return result;
+        } finally {
+          setEnabled(true);
+        }
+      }
+      
+      if (tool.toolCall.toolName === "applyPatch") {
+        setEnabled(false);
+        try {
+          const { patch } = tool.toolCall.args as ApplyPatchSchema;
+          
+          // Save current patch and tool call for the approval dialog
+          setCurrentPatch(patch);
+          setPendingToolCall(tool);
+          setShowPatchDialog(true);
+          
+          // The actual result will be handled when the user makes a decision
+          // Return a promise that will be resolved later
+          return new Promise((resolve) => {
+            // Store the resolve function in the pendingToolCall
+            setPendingToolCall({
+              ...tool,
+              resolve,
+            });
+          });
+        } catch (error) {
+          setEnabled(true);
+          console.error("Error with applyPatch", error);
+          
+          const errorMessage = error instanceof Error 
+            ? error.message 
+            : String(error);
+            
+          addToolResult({
+            toolCallId: tool.toolCall.toolCallId,
+            result: `Error: ${errorMessage}`,
+          });
+          
+          return `Error: ${errorMessage}`;
+        }
       }
     },
     onFinish: async (message) => {
@@ -62,9 +178,58 @@ export default function Chat(props: {
     headers: {
       "Adorable-App-Id": props.appId,
     },
-
     api: "/api/chat",
   });
+
+  // Handle patch approval decision
+  const handlePatchDecision = async (decision: ReviewDecision, message?: string) => {
+    if (!pendingToolCall) return;
+    
+    setShowPatchDialog(false);
+    
+    try {
+      let result: string;
+      
+      if (decision === ReviewDecision.YES || decision === ReviewDecision.ALWAYS) {
+        // Apply the patch
+        const { patch } = pendingToolCall.toolCall.args as ApplyPatchSchema;
+        result = await filesystemStore.applyPatch(patch);
+      } else {
+        // Rejected
+        result = `Changes rejected by user${message ? `: ${message}` : '.'}`;
+      }
+      
+      // Return the result to the AI
+      addToolResult({
+        toolCallId: pendingToolCall.toolCall.toolCallId,
+        result,
+      });
+      
+      // Resolve the pending promise
+      if (pendingToolCall.resolve) {
+        pendingToolCall.resolve(result);
+      }
+    } catch (error) {
+      console.error("Error handling patch decision", error);
+      
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : String(error);
+        
+      addToolResult({
+        toolCallId: pendingToolCall.toolCall.toolCallId,
+        result: `Error: ${errorMessage}`,
+      });
+      
+      if (pendingToolCall.resolve) {
+        pendingToolCall.resolve(`Error: ${errorMessage}`);
+      }
+    } finally {
+      setPendingToolCall(null);
+      setCurrentPatch("");
+      setEnabled(true);
+    }
+  };
 
   // Create a wrapper for handleInputChange to match expected function signature
   const onValueChange = (value: string) => {
@@ -86,6 +251,13 @@ export default function Chat(props: {
 
   return (
     <div className="flex flex-col h-full">
+      {showPatchDialog && (
+        <PatchApprovalDialog 
+          patch={currentPatch} 
+          onDecision={handlePatchDecision} 
+        />
+      )}
+      
       <div className="flex-1 overflow-y-auto p-3 flex flex-col space-y-6">
         <ChatContainer autoScroll>
           <AnimatePresence>

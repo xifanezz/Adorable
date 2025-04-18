@@ -6,6 +6,7 @@ import git from "isomorphic-git";
 import { fs } from "@/lib/fs";
 import http from "isomorphic-git/http/web";
 import { LsSchema } from "./tools";
+import { process_patch } from "@/agent/apply-patch";
 
 export interface FileItem {
   path: string;
@@ -51,6 +52,8 @@ interface FilesystemState {
   repoUrl: string | null;
 
   ls: (options: LsSchema) => Promise<FileItem[]>;
+  readFile: (path: string) => Promise<string | null>;
+  applyPatch: (patchText: string) => Promise<string>;
   setRepoInfo: (repoId: string, repoUrl: string) => void;
   fetchRepoFiles: () => Promise<void>;
   navigateToFolder: (folderPath: string) => void;
@@ -94,7 +97,7 @@ async function cloneRepo({
 // Function to recursively read directory and files
 async function processDirectory(
   dirPath: string,
-  relativeDir: string = ""
+  relativeDir: string = "",
 ): Promise<Record<string, FileInfo>> {
   const entries = await fs.promises.readdir(dirPath);
 
@@ -146,9 +149,9 @@ async function processDirectory(
 
           return filesRecord;
         }
-      })
+      }),
   ).then((records) =>
-    records.reduce((acc, record) => ({ ...acc, ...record }), {})
+    records.reduce((acc, record) => ({ ...acc, ...record }), {}),
   );
 
   return files;
@@ -264,7 +267,7 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
               contentType:
                 stats.type === "file" ? getContentType(entry) : undefined,
             };
-          })
+          }),
       );
 
       return filesList;
@@ -273,8 +276,95 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
       throw new Error(
         `Failed to list directory: ${
           err instanceof Error ? err.message : "Unknown error"
-        }`
+        }`,
       );
+    }
+  },
+
+  readFile: async (filePath: string) => {
+    const state = get();
+    const { repoId } = state;
+
+    if (!repoId) {
+      throw new Error("Repository information not provided");
+    }
+
+    const repoDir = `/${repoId}`;
+    const fullPath = path.join(repoDir, filePath);
+
+    try {
+      const content = await fs.promises.readFile(fullPath, "utf8");
+      return content as string;
+    } catch (err) {
+      console.error(`Error reading file ${filePath}:`, err);
+      return null;
+    }
+  },
+
+  applyPatch: async (patchText: string) => {
+    const state = get();
+    const { repoId } = state;
+
+    if (!repoId) {
+      throw new Error("Repository information not provided");
+    }
+
+    const repoDir = `/${repoId}`;
+
+    try {
+      const result = await process_patch(
+        patchText,
+        // Read function
+        async (p) => {
+          try {
+            const fullPath = path.join(repoDir, p);
+            const content = await fs.promises.readFile(fullPath, "utf8");
+            return content.toString();
+          } catch (err) {
+            console.error(`Error reading file for patch: ${p}`, err);
+            throw err;
+          }
+        },
+        // Write function
+        async (p, c) => {
+          try {
+            const fullPath = path.join(repoDir, p);
+            const dirPath = path.dirname(fullPath);
+
+            // Ensure directory exists
+            await fs.promises
+              .mkdir(dirPath, { recursive: true })
+              .catch((e) => undefined);
+
+            // Write file
+            await fs.promises.writeFile(fullPath, c, "utf8");
+
+            // Refresh file list after writing
+            setTimeout(() => get().fetchRepoFiles(), 100);
+          } catch (err) {
+            console.error(`Error writing file for patch: ${p}`, err);
+            throw err;
+          }
+        },
+        // Delete function
+        async (p) => {
+          try {
+            const fullPath = path.join(repoDir, p);
+            await fs.promises.unlink(fullPath);
+
+            // Refresh file list after deletion
+            setTimeout(() => get().fetchRepoFiles(), 100);
+          } catch (err) {
+            console.error(`Error deleting file for patch: ${p}`, err);
+            throw err;
+          }
+        },
+      );
+
+      return result;
+    } catch (err) {
+      console.error("Error applying patch:", err);
+      return `Error: ${err instanceof Error ? err.message : String(err)}`;
     }
   },
 
@@ -410,7 +500,7 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
             const repoDir = `/${repoId}`;
             const content = await fs.promises.readFile(
               `${repoDir}/${fullPath}`,
-              "utf8"
+              "utf8",
             );
 
             return {
@@ -450,3 +540,4 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
     }
   },
 }));
+
