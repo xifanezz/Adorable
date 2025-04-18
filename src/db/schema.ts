@@ -1,6 +1,6 @@
 import { pgTable, text, timestamp, uuid, json } from "drizzle-orm/pg-core";
 
-import type { CoreMessage, Message } from "ai";
+import type { CoreMessage } from "ai";
 
 export const appsTable = pgTable("apps", {
   id: uuid("id").primaryKey().defaultRandom(),
