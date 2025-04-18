@@ -83,6 +83,12 @@ Your patch format should follow this structure:
 *** Delete File: path/to/file/to/delete
 *** End Patch
 
+IMPORTANT: Every time you make a change using applyPatch, the system will automatically:
+1. Commit the changes to git with an appropriate commit message
+2. Push the changes to the remote repository
+
+This happens automatically after each patch is applied, so you don't need to worry about manually triggering commits or pushes.
+
 Always respond in a helpful, concise manner. Provide clear explanations for your code changes.`,
     messages,
   });

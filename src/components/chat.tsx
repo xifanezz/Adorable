@@ -3,7 +3,7 @@
 import { useChat } from "@ai-sdk/react";
 import { PromptInputBasic } from "./chatinput";
 import { Markdown } from "./ui/markdown";
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
 import Image from "next/image";
 import LogoSvg from "@/logo.svg";
 import { cn } from "@/lib/utils";
@@ -70,6 +70,89 @@ function PatchApprovalDialog({ patch, onDecision }: PatchApprovalDialogProps) {
   );
 }
 
+// Display commit and push notifications
+function GitStatusNotification({
+  lastCommitInfo, 
+  lastPushInfo
+}: {
+  lastCommitInfo: {
+    hash: string;
+    message: string;
+    timestamp: Date;
+  } | null;
+  lastPushInfo: {
+    success: boolean;
+    timestamp: Date;
+    error?: string;
+  } | null;
+}) {
+  const [showCommit, setShowCommit] = useState(!!lastCommitInfo);
+  const [showPush, setShowPush] = useState(!!lastPushInfo);
+  
+  // Auto-hide notifications after 5 seconds
+  useEffect(() => {
+    if (lastCommitInfo) {
+      setShowCommit(true);
+      const timer = setTimeout(() => setShowCommit(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [lastCommitInfo]);
+  
+  useEffect(() => {
+    if (lastPushInfo) {
+      setShowPush(true);
+      const timer = setTimeout(() => setShowPush(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [lastPushInfo]);
+  
+  if (!showCommit && !showPush) return null;
+  
+  return (
+    <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
+      {showCommit && lastCommitInfo && (
+        <div className="bg-gray-800 text-white p-3 rounded shadow-lg max-w-md">
+          <div className="flex justify-between items-center mb-1">
+            <span className="font-medium">Commit Created</span>
+            <button 
+              className="text-gray-400 hover:text-white" 
+              onClick={() => setShowCommit(false)}
+            >
+              ×
+            </button>
+          </div>
+          <div className="text-sm text-gray-300">{lastCommitInfo.message}</div>
+          <div className="text-xs text-gray-400 mt-1">
+            {lastCommitInfo.hash.substring(0, 7)} • {lastCommitInfo.timestamp.toLocaleTimeString()}
+          </div>
+        </div>
+      )}
+      
+      {showPush && lastPushInfo && (
+        <div className={`p-3 rounded shadow-lg max-w-md ${lastPushInfo.success ? 'bg-green-600' : 'bg-red-600'} text-white`}>
+          <div className="flex justify-between items-center mb-1">
+            <span className="font-medium">
+              {lastPushInfo.success ? 'Push Successful' : 'Push Failed'}
+            </span>
+            <button 
+              className="text-gray-200 hover:text-white" 
+              onClick={() => setShowPush(false)}
+            >
+              ×
+            </button>
+          </div>
+          {!lastPushInfo.success && lastPushInfo.error && (
+            <div className="text-sm">{lastPushInfo.error}</div>
+          )}
+          <div className="text-xs text-gray-200 mt-1">
+            {lastPushInfo.timestamp.toLocaleTimeString()}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Chat(props: {
   appId: string;
   initialMessages: Message[];
@@ -79,7 +162,10 @@ export default function Chat(props: {
   const [currentPatch, setCurrentPatch] = useState("");
   const [pendingToolCall, setPendingToolCall] = useState<any>(null);
   
+  // Get filesystem store state for git operations
   const filesystemStore = useFilesystemStore();
+  const lastCommitInfo = filesystemStore.lastCommitInfo;
+  const lastPushInfo = filesystemStore.lastPushInfo;
   
   const {
     messages,
@@ -258,6 +344,11 @@ export default function Chat(props: {
         />
       )}
       
+      <GitStatusNotification 
+        lastCommitInfo={lastCommitInfo} 
+        lastPushInfo={lastPushInfo} 
+      />
+      
       <div className="flex-1 overflow-y-auto p-3 flex flex-col space-y-6">
         <ChatContainer autoScroll>
           <AnimatePresence>
@@ -277,7 +368,7 @@ export default function Chat(props: {
                   {message.role === "user" ? null : (
                     <div className="flex items-center h-8">
                       <AnimatePresence mode="popLayout">
-                        {index === messages.length - 1 && (
+                        {index === messages.length - 1 && message.role === "assistant" && (
                           <motion.div
                             key="logo"
                             className="z-[-1]"
@@ -310,7 +401,7 @@ export default function Chat(props: {
                             damping: 25,
                           }}
                         >
-                          Styley
+                          {message.role === "system" ? "System" : "Styley"}
                         </motion.p>
                       </AnimatePresence>
                     </div>

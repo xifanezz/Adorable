@@ -1,12 +1,14 @@
 "use client";
 
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 import path from "path";
 import git from "isomorphic-git";
 import { fs } from "@/lib/fs";
 import http from "isomorphic-git/http/web";
 import { LsSchema } from "./tools";
 import { process_patch } from "@/agent/apply-patch";
+import { freestyle } from "./freestyle";
 
 export interface FileItem {
   path: string;
@@ -30,6 +32,17 @@ export interface FileContent {
   };
 }
 
+export interface GitCommitResult {
+  success: boolean;
+  error?: string;
+  commitHash?: string;
+}
+
+export interface GitPushResult {
+  success: boolean;
+  error?: string;
+}
+
 type FileInfo =
   | {
       size?: number;
@@ -50,16 +63,101 @@ interface FilesystemState {
   currentPath: string;
   repoId: string | null;
   repoUrl: string | null;
+  lastCommitInfo: {
+    hash: string;
+    message: string;
+    timestamp: Date;
+  } | null;
+  lastPushInfo: {
+    success: boolean;
+    timestamp: Date;
+    error?: string;
+  } | null;
 
   ls: (options: LsSchema) => Promise<FileItem[]>;
   readFile: (path: string) => Promise<string | null>;
   applyPatch: (patchText: string) => Promise<string>;
+  commitChanges: (message: string) => Promise<GitCommitResult>;
+  pushChanges: () => Promise<GitPushResult>;
   setRepoInfo: (repoId: string, repoUrl: string) => void;
-  fetchRepoFiles: () => Promise<void>;
   navigateToFolder: (folderPath: string) => void;
   navigateUp: () => void;
   getFileContent: (filePath: string) => Promise<FileContent | null>;
+  fetchRepoFiles: () => Promise<void>;
 }
+
+export interface LocalGitCredentialsStore {
+  gitIdentityId: string | null;
+  gitToken: string | null;
+
+  ensureGitIdentity: () => Promise<string>;
+  ensureGitToken: () => Promise<string>;
+
+  getCredentials: () => Promise<{
+    username: string;
+    password: string;
+  }>;
+}
+
+export const useLocalGitCredentialsStore = create<LocalGitCredentialsStore>()(
+  persist(
+    (set, get) => ({
+      gitIdentityId: null,
+      gitToken: null,
+
+      async ensureGitIdentity() {
+        const state = get();
+        if (state.gitIdentityId === null) {
+          const { id } = await freestyle.createGitIdentity();
+          set({ gitIdentityId: id });
+
+          const repoId = useFilesystemStore.getState().repoId;
+          if (!repoId) {
+            throw new Error("Repository ID not found");
+          }
+
+          await freestyle.grantGitPermission({
+            identityId: id,
+            repoId,
+            permission: "write",
+          });
+
+          return id;
+        }
+        return state.gitIdentityId;
+      },
+
+      async ensureGitToken() {
+        const state = get();
+        if (state.gitToken === null) {
+          const identityId = await state.ensureGitIdentity();
+          const { token } = await freestyle.createGitAccessToken({
+            identityId,
+          });
+          set({ gitToken: token });
+          return token;
+        }
+        return state.gitToken;
+      },
+
+      async getCredentials() {
+        const state = get();
+
+        const identityId = await state.ensureGitIdentity();
+        const token = await state.ensureGitToken();
+
+        return {
+          username: identityId,
+          password: token,
+        };
+      },
+    }),
+    {
+      name: "adorable-git-credentials",
+      storage: createJSONStorage(() => localStorage),
+    },
+  ),
+);
 
 async function ensureRepoCloned({
   repoId,
@@ -91,6 +189,15 @@ async function cloneRepo({
     fs,
     http,
     dir: `/${repoId}`,
+  });
+
+  await git.addRemote({
+    fs,
+    dir: `/${repoId}`,
+
+    remote: "origin",
+    url: repoUrl,
+    force: true,
   });
 }
 
@@ -223,6 +330,40 @@ export const getContentType = (filePath: string): string => {
   return contentTypeMap[ext] || "text/plain";
 };
 
+// Get all modified files in the repository
+async function getChangedFiles(repoDir: string): Promise<string[]> {
+  const statusMatrix = await git.statusMatrix({ fs, dir: repoDir });
+
+  // Filter for modified, added, or deleted files
+  const modifiedFiles = statusMatrix
+    .filter(([, head, workdir]) => head !== workdir)
+    .map(([filepath]) => filepath);
+
+  return modifiedFiles;
+}
+
+// Stage specific files for commit
+async function stageFiles(repoDir: string, files: string[]): Promise<void> {
+  for (const file of files) {
+    try {
+      await git.add({ fs, dir: repoDir, filepath: file });
+    } catch (error) {
+      console.error(`Error staging file ${file}:`, error);
+      throw error;
+    }
+  }
+}
+
+// ensureGitCredentials: async () => {
+//   const state = get();
+//   const { gitIdentityId } = state;
+//
+//   if (gitIdentityId === null) {
+//     const { id } = await freestyle.createGitIdentity();
+//     set({ gitIdentityId: id });
+//   }
+// },
+
 export const useFilesystemStore = create<FilesystemState>((set, get) => ({
   files: [],
   loading: false,
@@ -230,6 +371,8 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
   currentPath: "",
   repoId: null,
   repoUrl: null,
+  lastCommitInfo: null,
+  lastPushInfo: null,
 
   setRepoInfo: (repoId, repoUrl) => {
     set({ repoId, repoUrl });
@@ -301,6 +444,166 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
     }
   },
 
+  commitChanges: async (message: string): Promise<GitCommitResult> => {
+    const state = get();
+    const { repoId } = state;
+
+    if (!repoId) {
+      return {
+        success: false,
+        error: "Repository information not provided",
+      };
+    }
+
+    const repoDir = `/${repoId}`;
+
+    try {
+      // Get all changed files
+      const changedFiles = await getChangedFiles(repoDir);
+
+      if (changedFiles.length === 0) {
+        return {
+          success: true,
+          error: "No changes to commit",
+        };
+      }
+
+      // Stage all changed files
+      await stageFiles(repoDir, changedFiles);
+
+      // Create commit
+      const commitResult = await git.commit({
+        fs,
+        dir: repoDir,
+        message,
+        author: {
+          name: "Adorable AI",
+          email: "ai@adorable.app",
+        },
+      });
+
+      // Update last commit info
+      set({
+        lastCommitInfo: {
+          hash: commitResult,
+          message,
+          timestamp: new Date(),
+        },
+      });
+
+      return {
+        success: true,
+        commitHash: commitResult,
+      };
+    } catch (error) {
+      console.error("Error committing changes:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  },
+
+  pushChanges: async (): Promise<GitPushResult> => {
+    const state = get();
+    const { repoId, repoUrl } = state;
+
+    if (!repoId || !repoUrl) {
+      const result = {
+        success: false,
+        error: "Repository information not provided",
+      };
+
+      set({
+        lastPushInfo: {
+          ...result,
+          timestamp: new Date(),
+        },
+      });
+
+      return result;
+    }
+
+    const repoDir = `/${repoId}`;
+
+    try {
+      // Get current branch
+      const currentBranch = await git.currentBranch({
+        fs,
+        dir: repoDir,
+      });
+
+      if (!currentBranch) {
+        const result = {
+          success: false,
+          error: "Could not determine current branch",
+        };
+
+        set({
+          lastPushInfo: {
+            ...result,
+            timestamp: new Date(),
+          },
+        });
+
+        return result;
+      }
+
+      console.log("Current branch:", currentBranch);
+      console.log("Remotes:", await git.listRemotes({ fs, dir: repoDir }));
+
+      // Push to remote
+      await git.push({
+        fs,
+        http,
+        dir: repoDir,
+
+        remote: "origin",
+        url: repoUrl,
+
+        onAuth: async (_url, auth) => {
+          const credentials = await useLocalGitCredentialsStore
+            .getState()
+            .getCredentials();
+
+          console.log("Pushing with credentials:", credentials);
+
+          auth.username = credentials.username;
+          auth.password = credentials.password;
+
+          return auth;
+        },
+      });
+
+      const result = { success: true };
+
+      set({
+        lastPushInfo: {
+          ...result,
+          timestamp: new Date(),
+        },
+      });
+
+      return result;
+    } catch (error) {
+      console.error("Error pushing changes:", error);
+
+      const result = {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+
+      set({
+        lastPushInfo: {
+          ...result,
+          timestamp: new Date(),
+        },
+      });
+
+      return result;
+    }
+  },
+
   applyPatch: async (patchText: string) => {
     const state = get();
     const { repoId } = state;
@@ -310,8 +613,10 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
     }
 
     const repoDir = `/${repoId}`;
+    const timestamp = new Date().toISOString();
 
     try {
+      // First, apply the patch
       const result = await process_patch(
         patchText,
         // Read function
@@ -360,6 +665,70 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
           }
         },
       );
+
+      // After patch is applied successfully, commit the changes
+      const patchLines = patchText.split("\n");
+      let commitMessage = "Applied changes via patch";
+
+      // Try to generate a better commit message based on the patch content
+      if (patchLines.length > 1) {
+        const addedFiles = patchLines
+          .filter((line) => line.startsWith("*** Add File:"))
+          .map((line) => line.replace("*** Add File:", "").trim());
+
+        const updatedFiles = patchLines
+          .filter((line) => line.startsWith("*** Update File:"))
+          .map((line) => line.replace("*** Update File:", "").trim());
+
+        const deletedFiles = patchLines
+          .filter((line) => line.startsWith("*** Delete File:"))
+          .map((line) => line.replace("*** Delete File:", "").trim());
+
+        const parts = [];
+
+        if (addedFiles.length > 0) {
+          parts.push(
+            `Added ${addedFiles.length} file${addedFiles.length > 1 ? "s" : ""}`,
+          );
+        }
+
+        if (updatedFiles.length > 0) {
+          parts.push(
+            `Updated ${updatedFiles.length} file${updatedFiles.length > 1 ? "s" : ""}`,
+          );
+        }
+
+        if (deletedFiles.length > 0) {
+          parts.push(
+            `Deleted ${deletedFiles.length} file${deletedFiles.length > 1 ? "s" : ""}`,
+          );
+        }
+
+        if (parts.length > 0) {
+          commitMessage = parts.join(", ");
+        }
+      }
+
+      // Add timestamp to commit message
+      commitMessage += ` [${timestamp}]`;
+
+      // Create commit
+      const commitResult = await get().commitChanges(commitMessage);
+
+      if (!commitResult.success) {
+        console.warn("Failed to commit changes:", commitResult.error);
+      } else if (commitResult.commitHash) {
+        console.log("Created commit:", commitResult.commitHash);
+
+        // Automatically push after every commit
+        console.log("Pushing changes to remote...");
+        const pushResult = await get().pushChanges();
+        if (pushResult.success) {
+          console.log("Successfully pushed changes to remote");
+        } else {
+          console.warn("Failed to push changes:", pushResult.error);
+        }
+      }
 
       return result;
     } catch (err) {
