@@ -4,9 +4,6 @@ import { ADORABLE_TOOLS } from "@/lib/tools";
 import { getAppIdFromHeaders } from "@/lib/utils";
 import { createIdGenerator, Message, streamText } from "ai";
 
-// Allow streaming responses up to 30 seconds
-export const maxDuration = 30;
-
 export async function POST(req: Request) {
   const appId = getAppIdFromHeaders(req);
   if (!appId) {
