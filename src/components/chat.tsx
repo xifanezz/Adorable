@@ -253,12 +253,11 @@ export default function Chat(props: {
         setEnabled(false);
         let res;
         try {
-          const fileContent = await filesystemStore.getFileContent(
-            (tool.toolCall.args as CatSchema).path
-          );
+          // Use the cat method directly from the filesystem store
+          const fileContent = await filesystemStore.cat(tool.toolCall.args as CatSchema);
           // For chat display, we only need the content as a string
           res =
-            typeof fileContent?.content === "string"
+            fileContent && typeof fileContent.content === "string"
               ? fileContent.content
               : "File content not available";
         } catch (e) {
