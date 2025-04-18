@@ -52,13 +52,17 @@ export default function Chat(props: {
         // return res;
       } else if (tool.toolCall.toolName === "cat") {
         setEnabled(false);
-        const res = await filesystemStore
-          .cat(tool.toolCall.args as { path: string })
-          .catch((e) => {
-            return {
-              error: e,
-            };
-          });
+        let res;
+        try {
+          const fileContent = await filesystemStore.getFileContent(tool.toolCall.args.path);
+          // For chat display, we only need the content as a string
+          res = typeof fileContent?.content === 'string' ? fileContent.content : "File content not available";
+        } catch (e) {
+          res = {
+            error: e instanceof Error ? e.message : String(e),
+          };
+        }
+        
         await addToolResult({
           toolCallId: tool.toolCall.toolCallId,
           result: res,
@@ -169,53 +173,27 @@ export default function Chat(props: {
                     )}
                   >
                     {Array.isArray(message.parts) ? (
-                      message.parts.map(
-                        (part, index) => {
-                          if (part.type === "text") {
-                            return (
-                              <div key={index} className="mb-4">
-                                <Markdown className="prose prose-sm dark:prose-invert max-w-none">
-                                  {part.text}
-                                </Markdown>
-                              </div>
-                            );
-                          } else if (
-                            part.type &&
-                            part.type === "tool-invocation"
-                          ) {
-                            return (
-                              <ToolRenderer
-                                key={index}
-                                toolInvocation={part.toolInvocation}
-                              />
-                            );
-                          }
+                      message.parts.map((part, index) => {
+                        if (part.type === "text") {
+                          return (
+                            <div key={index} className="mb-4">
+                              <Markdown className="prose prose-sm dark:prose-invert max-w-none">
+                                {part.text}
+                              </Markdown>
+                            </div>
+                          );
+                        } else if (
+                          part.type &&
+                          part.type === "tool-invocation"
+                        ) {
+                          return (
+                            <ToolRenderer
+                              key={index}
+                              toolInvocation={part.toolInvocation}
+                            />
+                          );
                         }
-                        // For LS tool, use specialized renderer
-                        //   if (part.toolInvocation.toolName === "ls") {
-                        //     return (
-                        //       <LsRenderer
-                        //         key={index}
-                        //         className="mb-2"
-                        //         toolInvocation={part.toolInvocation}
-                        //       />
-                        //     );
-                        //   }
-
-                        //   // For all other tools, use generic renderer
-                        //   return (
-                        //     <ToolRenderer
-                        //       key={index}
-                        //       className="mb-2"
-                        //       toolInvocation={{
-                        //         name: part.toolInvocation.toolName,
-                        //         args: part.toolInvocation.args,
-                        //       }}
-                        //     />
-                        //   );
-                        // }
-                        // return null;
-                      )
+                      })
                     ) : message.content ? (
                       <Markdown className="prose prose-sm dark:prose-invert max-w-none">
                         {message.content}
