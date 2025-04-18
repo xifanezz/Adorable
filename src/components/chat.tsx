@@ -9,10 +9,10 @@ import LogoSvg from "@/logo.svg";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import { ChatContainer } from "./ui/chat-container";
-// import { ADORABLE_TOOLS } from "@/lib/tools";
 import { Message } from "ai";
 import { useFilesystemStore } from "@/lib/filesystem-store";
 import { LsSchema } from "@/lib/tools";
+import { ToolRenderer } from "./ToolRenderer";
 
 export default function Chat(props: {
   appId: string;
@@ -168,20 +168,14 @@ export default function Chat(props: {
                           part.type === "tool-invocation"
                         ) {
                           return (
-                            <div
+                            <ToolRenderer
                               key={index}
-                              className="mb-2 text-xs bg-gray-100 dark:bg-gray-800 p-2.5 rounded-lg"
-                            >
-                              {JSON.stringify(part.toolInvocation)}
-                            </div>
+                              toolInvocation={part.toolInvocation}
+                            />
                           );
                         }
                         return null;
                       })
-                    ) : message.content ? (
-                      <Markdown className="prose prose-sm dark:prose-invert max-w-none">
-                        {message.content}
-                      </Markdown>
                     ) : (
                       <p className="text-gray-500">No content</p>
                     )}
