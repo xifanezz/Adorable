@@ -30,7 +30,7 @@ export default function Chat(props: {
   } = useChat({
     initialMessages: props.initialMessages,
     generateId: () => {
-      return "bababa-" + crypto.randomUUID();
+      return "cs-" + crypto.randomUUID();
     },
     sendExtraMessageFields: true,
     onToolCall: async (tool) => {
@@ -52,12 +52,9 @@ export default function Chat(props: {
         // return res;
       }
     },
-    onFinish: async (message) => {
-    },
     headers: {
       "Adorable-App-Id": props.appId,
     },
-
     api: "/api/chat",
   });
 
