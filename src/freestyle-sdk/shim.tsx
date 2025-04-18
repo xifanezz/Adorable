@@ -8,21 +8,18 @@ export function shim(api: FreestyleSandboxes): FreestyleSandboxes & {
   }>;
 } {
   api.requestDevServer = async ({ repo }) => {
-    return await fetch(
-      "https://api.freestyle.it.com/ephemeral/v1/dev-servers",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ` + process.env.FREESTYLE_API_KEY,
-        },
-        body: JSON.stringify({
-          command: null,
-          repo: repo,
-          domain: null,
-        }),
-      }
-    )
+    return await fetch("https://api.freestyle.sh/ephemeral/v1/dev-servers", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ` + process.env.FREESTYLE_API_KEY,
+      },
+      body: JSON.stringify({
+        command: null,
+        repo: repo,
+        domain: null,
+      }),
+    })
       .then((response) => {
         return response.json();
       })
