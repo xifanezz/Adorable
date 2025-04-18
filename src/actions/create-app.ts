@@ -1,7 +1,6 @@
 "use server";
 
 import { appsTable } from "@/db/schema";
-import { shim } from "@/freestyle-sdk/shim";
 import { db } from "@/lib/db";
 import { freestyle } from "@/lib/freestyle";
 
@@ -21,8 +20,8 @@ export async function createApp() {
     });
 
   // start the dev server as soon as possible
-  shim(freestyle).requestDevServer({
-    repo: process.env.GIT_ROOT + "/" + repo.repoId,
+  freestyle.requestDevServer({
+    repoUrl: process.env.GIT_ROOT + "/" + repo.repoId,
   });
 
   const app = await db
