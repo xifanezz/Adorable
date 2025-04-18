@@ -9,6 +9,11 @@ import http from "isomorphic-git/http/web";
 import { LsSchema } from "./tools";
 import { process_patch } from "@/agent/apply-patch";
 import { freestyle } from "./freestyle";
+import {
+  createGitAccessToken,
+  createGitIdentity,
+  grantRepoAccess,
+} from "@/actions/git-credentials";
 
 export interface FileItem {
   path: string;
@@ -107,23 +112,23 @@ export const useLocalGitCredentialsStore = create<LocalGitCredentialsStore>()(
 
       async ensureGitIdentity() {
         const state = get();
-        if (state.gitIdentityId === null) {
-          const { id } = await freestyle.createGitIdentity();
-          set({ gitIdentityId: id });
 
-          const repoId = useFilesystemStore.getState().repoId;
-          if (!repoId) {
-            throw new Error("Repository ID not found");
-          }
-
-          await freestyle.grantGitPermission({
-            identityId: id,
-            repoId,
-            permission: "write",
-          });
-
-          return id;
+        const repoId = useFilesystemStore.getState().repoId;
+        if (!repoId) {
+          throw new Error("Repository ID not found");
         }
+
+        if (state.gitIdentityId === null) {
+          const gitIdentityId = await createGitIdentity();
+          set({ gitIdentityId });
+
+          await grantRepoAccess(repoId, gitIdentityId);
+
+          return gitIdentityId;
+        }
+
+        await grantRepoAccess(repoId, state.gitIdentityId);
+
         return state.gitIdentityId;
       },
 
@@ -131,9 +136,7 @@ export const useLocalGitCredentialsStore = create<LocalGitCredentialsStore>()(
         const state = get();
         if (state.gitToken === null) {
           const identityId = await state.ensureGitIdentity();
-          const { token } = await freestyle.createGitAccessToken({
-            identityId,
-          });
+          const token = await createGitAccessToken(identityId);
           set({ gitToken: token });
           return token;
         }
@@ -909,4 +912,3 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
     }
   },
 }));
-
