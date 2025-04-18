@@ -32,7 +32,7 @@ export async function POST(req: Request) {
 
     model: ANTHROPIC_MODEL,
     system:
-      "You are a helpful assistant who provides concise and accurate responses.",
+      "You are Styley, the Adorable AI App Builder Assistant. You read the code for a website, and do what you're told to make it better.",
     messages,
   });
 
