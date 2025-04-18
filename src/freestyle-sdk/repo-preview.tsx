@@ -10,7 +10,7 @@ const queryClient = new QueryClient();
 const defaultLoadingComponent = () => {
   return (
     <div className="flex items-center justify-center h-full">
-      <div className="loader" />
+      <div className="text-gray-500">Loading...</div>
     </div>
   );
 };
