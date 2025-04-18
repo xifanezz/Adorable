@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import { LsRenderer } from "./tools/ls";
 import { CatRenderer } from "./tools/cat";
+import { GrepRenderer } from "./tools/grep";
 import { ToolInvocation } from "ai";
 
 export function ToolRenderer({
@@ -17,6 +18,8 @@ export function ToolRenderer({
     return <LsRenderer toolInvocation={toolInvocation} className={className} />;
   } else if (toolInvocation.toolName === "cat") {
     return <CatRenderer toolInvocation={toolInvocation} className={className} />;
+  } else if (toolInvocation.toolName === "grep") {
+    return <GrepRenderer toolInvocation={toolInvocation} className={className} />;
   }
   
   // Generic renderer for other tools

@@ -5,7 +5,7 @@ import path from "path";
 import git from "isomorphic-git";
 import { fs } from "@/lib/fs";
 import http from "isomorphic-git/http/web";
-import { CatSchema, LsSchema } from "./tools";
+import { CatSchema, GrepSchema, LsSchema } from "./tools";
 
 export interface FileItem {
   path: string;
@@ -42,6 +42,18 @@ type FileInfo =
       error: string;
     };
 
+// Type for grep match results
+export interface GrepMatch {
+  file: string;
+  line: number;
+  content: string;
+  column?: number;
+  matches?: Array<{
+    start: number;
+    end: number;
+  }>;
+}
+
 interface FilesystemState {
   files: FileItem[];
   loading: boolean;
@@ -51,6 +63,7 @@ interface FilesystemState {
   repoUrl: string | null;
   cat: (options: CatSchema) => Promise<FileContent | null>;
   ls: (options: LsSchema) => Promise<FileItem[]>;
+  grep: (options: GrepSchema) => Promise<GrepMatch[]>;
   setRepoInfo: (repoId: string, repoUrl: string) => void;
   fetchRepoFiles: () => Promise<void>;
   navigateToFolder: (folderPath: string) => void;
@@ -505,6 +518,126 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
     } catch (err) {
       console.error("Error loading file content:", err);
       return null;
+    }
+  },
+  
+  grep: async (options: GrepSchema) => {
+    const state = get();
+    const { repoId, repoUrl } = state;
+
+    if (!repoId || !repoUrl) {
+      throw new Error("Repository information not provided");
+    }
+
+    await ensureRepoCloned({ repoId, repoUrl });
+    const repoDir = `/${repoId}`;
+    
+    const searchPath = options.path ? path.join(repoDir, options.path) : repoDir;
+    const pattern = options.pattern;
+    const recursive = options.recursive !== false; // Default to true
+    const caseSensitive = options.caseSensitive || false;
+    const filePattern = options.filePattern || "*";
+    const maxResults = options.maxResults || Number.MAX_SAFE_INTEGER;
+    
+    try {
+      // Get all files in the directory (recursively if specified)
+      const getFilesRecursively = async (dir: string, basePath: string = ''): Promise<string[]> => {
+        const entries = await fs.promises.readdir(dir);
+        const files = await Promise.all(
+          entries.filter(entry => entry !== '.git').map(async (entry) => {
+            const fullPath = path.join(dir, entry);
+            const relativePath = path.join(basePath, entry);
+            const stats = await fs.promises.stat(fullPath);
+            
+            if (stats.type === 'dir') {
+              return recursive ? getFilesRecursively(fullPath, relativePath) : [];
+            } else {
+              // Check if the file matches the file pattern
+              if (filePattern === '*' || matchesPattern(entry, filePattern)) {
+                return [relativePath];
+              }
+              return [];
+            }
+          })
+        );
+        
+        return files.flat();
+      };
+      
+      // Helper to check if filename matches pattern like "*.js" or "*.{ts,tsx}"
+      const matchesPattern = (filename: string, pattern: string): boolean => {
+        if (pattern === '*') return true;
+        
+        if (pattern.includes('{') && pattern.includes('}')) {
+          // Handle patterns like "*.{js,ts,tsx}"
+          const prefix = pattern.split('{')[0].replace('*', '.*');
+          const exts = pattern.split('{')[1].split('}')[0].split(',');
+          const regex = new RegExp(`${prefix}(${exts.join('|')})$`, caseSensitive ? '' : 'i');
+          return regex.test(filename);
+        } else {
+          // Handle simple patterns like "*.js"
+          const regex = new RegExp(pattern.replace(/\./g, '\\.').replace(/\*/g, '.*'), caseSensitive ? '' : 'i');
+          return regex.test(filename);
+        }
+      };
+      
+      // Get all matching files
+      const basePathForDisplay = options.path || '';
+      const allFiles = await getFilesRecursively(searchPath);
+      
+      // Search through files for pattern
+      const results: GrepMatch[] = [];
+      const searchRegExp = new RegExp(pattern, caseSensitive ? 'g' : 'gi');
+      
+      for (const filePath of allFiles) {
+        if (results.length >= maxResults) break;
+        
+        try {
+          const fullPath = path.join(repoDir, filePath);
+          const content = await fs.promises.readFile(fullPath, 'utf8');
+          const lines = content.split('\n');
+          
+          for (let i = 0; i < lines.length; i++) {
+            if (results.length >= maxResults) break;
+            
+            const line = lines[i];
+            const matches: { start: number; end: number }[] = [];
+            let match;
+            
+            // Create a new RegExp instance for each search to avoid state issues
+            const lineRegExp = new RegExp(pattern, caseSensitive ? 'g' : 'gi');
+            
+            // Find all matches in the line
+            while ((match = lineRegExp.exec(line)) !== null) {
+              matches.push({
+                start: match.index,
+                end: match.index + match[0].length
+              });
+            }
+            
+            if (matches.length > 0 || searchRegExp.test(line)) {
+              results.push({
+                file: path.join(basePathForDisplay, filePath),
+                line: i + 1,  // 1-based line numbers
+                content: line,
+                matches: matches.length > 0 ? matches : undefined
+              });
+            }
+          }
+        } catch (error) {
+          console.error(`Error reading file ${filePath}:`, error);
+          // Continue with other files
+        }
+      }
+      
+      return results;
+    } catch (err) {
+      console.error(`Error searching in ${searchPath}:`, err);
+      throw new Error(
+        `Failed to search for pattern: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
+      );
     }
   },
 }));

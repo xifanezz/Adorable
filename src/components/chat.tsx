@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { ChatContainer } from "./ui/chat-container";
 import { Message } from "ai";
 import { useFilesystemStore } from "@/lib/filesystem-store";
-import { LsSchema } from "@/lib/tools";
+import { CatSchema, GrepSchema, LsSchema } from "@/lib/tools";
 import { ToolRenderer } from "./ToolRenderer";
 
 export default function Chat(props: {
@@ -54,15 +54,44 @@ export default function Chat(props: {
         setEnabled(false);
         let res;
         try {
-          const fileContent = await filesystemStore.getFileContent(tool.toolCall.args.path);
+          const fileContent = await filesystemStore.getFileContent(
+            (tool.toolCall.args as CatSchema).path
+          );
           // For chat display, we only need the content as a string
-          res = typeof fileContent?.content === 'string' ? fileContent.content : "File content not available";
+          res =
+            typeof fileContent?.content === "string"
+              ? fileContent.content
+              : "File content not available";
         } catch (e) {
           res = {
             error: e instanceof Error ? e.message : String(e),
           };
         }
-        
+
+        await addToolResult({
+          toolCallId: tool.toolCall.toolCallId,
+          result: res,
+        });
+
+        setEnabled(true);
+      } else if (tool.toolCall.toolName === "grep") {
+        setEnabled(false);
+        let res;
+        try {
+          // Call the grep method from filesystemStore
+          res = await filesystemStore
+            .grep(tool.toolCall.args as GrepSchema)
+            .catch((e) => {
+              return {
+                error: e instanceof Error ? e.message : String(e),
+              };
+            });
+        } catch (e) {
+          res = {
+            error: e instanceof Error ? e.message : String(e),
+          };
+        }
+
         await addToolResult({
           toolCallId: tool.toolCall.toolCallId,
           result: res,
