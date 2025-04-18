@@ -31,7 +31,7 @@ export default function Home() {
 
     setIsLoading(true);
     try {
-      const app = await createApp("Adorable App", prompt);
+      const app = await createApp();
       router.push(`/app/${app.id}`);
     } catch (error) {
       console.error("Error creating app:", error);

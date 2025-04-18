@@ -5,7 +5,7 @@ import path from "path";
 import git from "isomorphic-git";
 import { fs } from "@/lib/fs";
 import http from "isomorphic-git/http/web";
-import { LsSchema } from "./tools";
+import { CatSchema, LsSchema } from "./tools";
 
 export interface FileItem {
   path: string;
@@ -49,7 +49,7 @@ interface FilesystemState {
   currentPath: string;
   repoId: string | null;
   repoUrl: string | null;
-
+  cat: (options: CatSchema) => Promise<FileContent | null>;
   ls: (options: LsSchema) => Promise<FileItem[]>;
   setRepoInfo: (repoId: string, repoUrl: string) => void;
   fetchRepoFiles: () => Promise<void>;
@@ -275,6 +275,64 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
           err instanceof Error ? err.message : "Unknown error"
         }`
       );
+    }
+  },
+  cat: async (options: CatSchema): Promise<FileContent | null> => {
+    const state = get();
+    const { repoId, repoUrl } = state;
+
+    if (!repoId || !repoUrl) {
+      throw new Error("Repository information not provided");
+    }
+
+    await ensureRepoCloned({ repoId, repoUrl });
+    const repoDir = `/${repoId}`;
+    const filePath = options.path;
+
+    try {
+      // Get file stats to check if it exists and get size
+      const stats = await fs.promises.stat(path.join(repoDir, filePath));
+      if (stats.type !== "file") {
+        throw new Error(`Path is not a file: ${filePath}`);
+      }
+
+      // Get the file content
+      const content = await fs.promises.readFile(
+        path.join(repoDir, filePath),
+        "utf8"
+      );
+
+      // Get the latest commit info for this file
+      const commits = await git.log({
+        fs,
+        dir: repoDir,
+        filepath: filePath,
+        depth: 1,
+      });
+
+      const latestCommit = commits[0] || {
+        oid: "unknown",
+        commit: {
+          message: "No commit history found",
+          author: { timestamp: Date.now() / 1000 },
+        },
+      };
+
+      return {
+        content,
+        encoding: "utf-8",
+        contentType: getContentType(filePath),
+        size: stats.size,
+        path: filePath,
+        commit: {
+          oid: latestCommit.oid,
+          message: latestCommit.commit.message,
+          date: latestCommit.commit.author.timestamp * 1000,
+        },
+      };
+    } catch (err) {
+      console.error(`Error reading file ${filePath}:`, err);
+      return null;
     }
   },
 

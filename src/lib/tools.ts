@@ -28,10 +28,20 @@ const lsSchema = z.object({
     .describe("Maximum number of entries to return. Default: no limit"),
 });
 
+const catSchema = z.object({
+  path: z.string().describe("Path to the file to read"),
+});
+
 export type LsSchema = z.infer<typeof lsSchema>;
+export type CatSchema = z.infer<typeof catSchema>;
+
 export const ADORABLE_TOOLS = {
   ls: tool({
     description: "List files in a directory",
     parameters: lsSchema,
+  }),
+  cat: tool({
+    description: "Read a file",
+    parameters: catSchema,
   }),
 };
