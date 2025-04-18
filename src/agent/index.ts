@@ -1,16 +1,16 @@
 // Export the main agent loop and types
-export { AgentLoop, type CommandConfirmation } from "./agent-loop.js";
-export { ReviewDecision } from "./review.js";
+export { AgentLoop, type CommandConfirmation } from "./agent-loop";
+export { ReviewDecision } from "./review";
 
 // Export utility functions
-export { log, isLoggingEnabled } from "./log.js";
+export { log, isLoggingEnabled } from "./log";
 
 // Export patch utilities
 export {
   process_patch,
   identify_files_needed,
   identify_files_added,
-} from "./apply-patch.js";
+} from "./apply-patch";
 
 // Export types
 export {
@@ -21,7 +21,7 @@ export {
   type ResponseItem,
   type ResponseInputItem,
   type ResponseFunctionToolCall,
-} from "./types.js";
+} from "./types";
 
 // Export parse-apply-patch utilities
 export {
@@ -30,5 +30,4 @@ export {
   type ApplyPatchCreateFileOp,
   type ApplyPatchDeleteFileOp,
   type ApplyPatchUpdateFileOp,
-} from "./parse-apply-patch.js";
-
+} from "./parse-apply-patch";

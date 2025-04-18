@@ -24,7 +24,7 @@
     "dotenv": "^16.5.0",
     "drizzle-orm": "^0.42.0",
     "drizzle-zod": "^0.7.1",
-    "freestyle-sandboxes": "^0.0.48",
+    "freestyle-sandboxes": "^0.0.49",
     "isomorphic-git": "^1.30.1",
     "lucide-react": "^0.487.0",
     "marked": "^15.0.8",
@@ -55,6 +55,7 @@
     "drizzle-kit": "^0.31.0",
     "eslint": "^9",
     "eslint-config-next": "15.3.0",
+    "freestyle-sh": "^0.4.26",
     "tailwindcss": "^4.1.3",
     "tsx": "^4.19.3",
     "typescript": "^5"

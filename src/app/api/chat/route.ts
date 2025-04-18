@@ -1,5 +1,6 @@
 import { saveResponseMessages } from "@/lib/db";
 import { ANTHROPIC_MODEL } from "@/lib/model";
+import { SYSTEM_MESSAGE } from "@/lib/system";
 import { ADORABLE_TOOLS } from "@/lib/tools";
 import { getAppIdFromHeaders } from "@/lib/utils";
 import { createIdGenerator, Message, streamText } from "ai";
@@ -16,6 +17,7 @@ export async function POST(req: Request) {
   const result = streamText({
     tools: ADORABLE_TOOLS,
     maxSteps: 15,
+
     experimental_generateMessageId: createIdGenerator({
       prefix: "server-",
     }),
@@ -28,8 +30,7 @@ export async function POST(req: Request) {
     },
 
     model: ANTHROPIC_MODEL,
-    system:
-      "You are Styley, the Adorable AI App Builder Assistant. You read the code for a website, and do what you're told to make it better.",
+    system: SYSTEM_MESSAGE,
     messages,
   });
 

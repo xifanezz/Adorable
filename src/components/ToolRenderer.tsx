@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { LsRenderer } from "./tools/ls";
 import { CatRenderer } from "./tools/cat";
 import { GrepRenderer } from "./tools/grep";
+import { ApplyPatchRenderer } from "./tools/applyPatch";
 import { ToolInvocation } from "ai";
 
 export function ToolRenderer({
@@ -20,6 +21,8 @@ export function ToolRenderer({
     return <CatRenderer toolInvocation={toolInvocation} className={className} />;
   } else if (toolInvocation.toolName === "grep") {
     return <GrepRenderer toolInvocation={toolInvocation} className={className} />;
+  } else if (toolInvocation.toolName === "applyPatch") {
+    return <ApplyPatchRenderer toolInvocation={toolInvocation} className={className} />;
   }
   
   // Generic renderer for other tools
