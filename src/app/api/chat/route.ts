@@ -1,15 +1,16 @@
 import { saveResponseMessages } from "@/lib/db";
+import { ANTHROPIC_MODEL } from "@/lib/model";
 import { ADORABLE_TOOLS } from "@/lib/tools";
-import { anthropic } from "@ai-sdk/anthropic";
+import { getAppIdFromHeaders } from "@/lib/utils";
 import { createIdGenerator, Message, streamText } from "ai";
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
-  const appId = req.headers.get("Adorable-App-Id");
+  const appId = getAppIdFromHeaders(req);
   if (!appId) {
-    return new Response("Missing appId header", { status: 400 });
+    return new Response("Missing App Id header", { status: 400 });
   }
 
   const { messages }: { id: string; messages: Array<Message> } =
@@ -21,7 +22,6 @@ export async function POST(req: Request) {
     experimental_generateMessageId: createIdGenerator({
       prefix: "server-",
     }),
-    // onFinish({ response: { messages } }) {},
     onFinish: async ({ response }) => {
       await saveResponseMessages({
         appId,
@@ -30,13 +30,13 @@ export async function POST(req: Request) {
       });
     },
 
-    model: anthropic("claude-3-7-sonnet-20250219"),
+    model: ANTHROPIC_MODEL,
     system:
       "You are a helpful assistant who provides concise and accurate responses.",
     messages,
   });
 
-  result.consumeStream();
+  result.consumeStream(); // keep going even if the client disconnects
 
   return result.toDataStreamResponse();
 }
