@@ -1,10 +1,17 @@
-import { ReviewDecision } from "./review.js";
-import type { AppConfig, ApplyPatchCommand, ApprovalPolicy, ResponseFunctionToolCall, ResponseInputItem, ResponseItem } from "./types.js";
+"use client";
+import { ReviewDecision } from "./review";
+import type {
+  AppConfig,
+  ApplyPatchCommand,
+  ApprovalPolicy,
+  ResponseFunctionToolCall,
+  ResponseInputItem,
+  ResponseItem,
+} from "./types";
 
-import { log, isLoggingEnabled } from "./log.js";
-import { process_patch } from "./apply-patch.js";
-import { randomUUID } from "node:crypto";
-import * as fs from "fs";
+import { log, isLoggingEnabled } from "./log";
+import { process_patch } from "./apply-patch";
+import { fs } from "@/lib/fs";
 
 // Timeout for rate limit retries
 const RATE_LIMIT_RETRY_WAIT_MS = 2500;
@@ -45,18 +52,18 @@ export class AgentLoop {
    * to interrupt the current task (e.g. via the escape hot‑key).
    */
   private currentStream: unknown | null = null;
-  
+
   /** Incremented with every call to `run()`. Allows us to ignore stray events
    * from streams that belong to a previous run which might still be emitting
    * after the user has canceled and issued a new command. */
   private generation = 0;
-  
+
   /** AbortController for in‑progress tool calls (e.g. apply patch commands). */
   private execAbortController: AbortController | null = null;
-  
+
   /** Set to true when `cancel()` is called so `run()` can exit early. */
   private canceled = false;
-  
+
   /** Function calls that were emitted by the model but never answered because
    *  the user cancelled the run.  We keep the `call_id`s around so the *next*
    *  request can send a dummy `function_call_output` that satisfies the
@@ -64,10 +71,10 @@ export class AgentLoop {
    *    400 | No tool output found for function call …
    *  error from OpenAI. */
   private pendingAborts: Set<string> = new Set();
-  
+
   /** Set to true by `terminate()` – prevents any further use of the instance. */
   private terminated = false;
-  
+
   /** Master abort controller – fires when terminate() is invoked. */
   private readonly hardAbort = new AbortController();
 
@@ -174,7 +181,7 @@ export class AgentLoop {
     this.onLoading = onLoading;
     this.getCommandConfirmation = getCommandConfirmation;
     this.onLastResponseId = onLastResponseId;
-    this.sessionId = randomUUID().replace(/-/g, "");
+    this.sessionId = crypto.randomUUID().replace(/-/g, "");
 
     this.hardAbort = new AbortController();
 
@@ -197,16 +204,15 @@ export class AgentLoop {
     additionalItems?: Array<ResponseInputItem>;
   }> {
     // Ask for user confirmation
-    const { review: decision, customDenyMessage } = await this.getCommandConfirmation(
-      command,
-      { patch: patchText },
-    );
+    const { review: decision, customDenyMessage } =
+      await this.getCommandConfirmation(command, { patch: patchText });
 
     // Any decision other than an affirmative (YES / ALWAYS) aborts execution.
     if (decision !== ReviewDecision.YES && decision !== ReviewDecision.ALWAYS) {
       const note =
         decision === ReviewDecision.NO_CONTINUE
-          ? customDenyMessage?.trim() || "No, don't do that — keep going though."
+          ? customDenyMessage?.trim() ||
+            "No, don't do that — keep going though."
           : "No, don't do that — stop for now.";
       return {
         outputText: "aborted",
@@ -224,16 +230,16 @@ export class AgentLoop {
     // Process the patch
     try {
       const start = Date.now();
-      
-      const result = process_patch(
+
+      const result = await process_patch(
         patchText,
-        (p) => fs.readFileSync(p, "utf8"),
-        (p, c) => fs.writeFileSync(p, c, "utf8"),
-        (p) => fs.unlinkSync(p),
+        (p) => fs.promises.readFile(p, "utf8").then((c) => c.toString()),
+        (p, c) => fs.promises.writeFile(p, c, "utf8"),
+        (p) => fs.promises.unlink(p),
       );
-      
+
       const duration = Date.now() - start;
-      
+
       return {
         outputText: result,
         metadata: {
@@ -261,7 +267,7 @@ export class AgentLoop {
     if (this.canceled) {
       return [];
     }
-    
+
     // For simplicity, extract the name and arguments directly
     const name = item.arguments ? JSON.parse(item.arguments).name : undefined;
     const rawArguments = item.arguments;
@@ -273,11 +279,13 @@ export class AgentLoop {
       args = rawArguments ? JSON.parse(rawArguments) : {};
     } catch (e) {
       console.error("Failed to parse function call arguments:", e);
-      return [{
-        type: "function_call_output",
-        call_id: callId,
-        output: `invalid arguments: ${rawArguments}`,
-      }];
+      return [
+        {
+          type: "function_call_output",
+          call_id: callId,
+          output: `invalid arguments: ${rawArguments}`,
+        },
+      ];
     }
 
     const outputItem: ResponseInputItem = {
@@ -300,7 +308,7 @@ export class AgentLoop {
             metadata,
             additionalItems: additionalItemsFromExec,
           } = await this.handleApplyPatch(args.cmd, patchText);
-          
+
           outputItem.output = JSON.stringify({ output: outputText, metadata });
 
           if (additionalItemsFromExec) {
@@ -308,7 +316,7 @@ export class AgentLoop {
           }
         } else {
           // Unsupported command
-          outputItem.output = JSON.stringify({ 
+          outputItem.output = JSON.stringify({
             output: "Only apply_patch commands are supported.",
             metadata: { exit_code: 1, duration_seconds: 0 },
           });
@@ -330,28 +338,30 @@ export class AgentLoop {
   ): Promise<void> {
     // This is a simplified implementation that doesn't make actual API calls
     // In a real implementation, this would connect to an LLM API
-    
+
     if (this.terminated) {
       throw new Error("AgentLoop has been terminated");
     }
-    
+
     // Reset cancellation flag for a fresh run
     this.canceled = false;
-    
+
     // Create a fresh AbortController for this run
     this.execAbortController = new AbortController();
-    
+
     if (isLoggingEnabled()) {
-      log(`AgentLoop.run(): with ${input.length} input items. This is a simplified implementation without actual API calls.`);
+      log(
+        `AgentLoop.run(): with ${input.length} input items. This is a simplified implementation without actual API calls.`,
+      );
     }
-    
+
     // In this simplified implementation, we'll mock the handling of tool calls
     // by processing any function_call items in the input
     for (const item of input) {
       if (item.type === "function_call" && !this.canceled) {
         const functionCallItem = item as unknown as ResponseFunctionToolCall;
         const result = await this.handleFunctionCall(functionCallItem);
-        
+
         // Process results
         for (const resultItem of result) {
           if (!this.canceled) {
@@ -365,16 +375,17 @@ export class AgentLoop {
         }
       }
     }
-    
+
     // Set a mock response ID
     const mockResponseId = `mock-response-${Date.now()}`;
     this.onLastResponseId(mockResponseId);
-    
+
     // Signal that we're done loading
     this.onLoading(false);
-    
+
     if (isLoggingEnabled()) {
       log(`AgentLoop.run(): completed mock execution`);
     }
   }
 }
+

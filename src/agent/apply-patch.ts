@@ -1,7 +1,7 @@
 // Based on reference implementation from
 // https://cookbook.openai.com/examples/gpt4-1_prompting_guide#reference-implementation-apply_patchpy
 
-import fs from "fs";
+import { fs } from "@/lib/fs";
 import path from "path";
 
 // -----------------------------------------------------------------------------
@@ -537,58 +537,61 @@ export function patch_to_commit(
 // Filesystem helpers for Node environment
 // -----------------------------------------------------------------------------
 
-export function load_files(
+export async function load_files(
   paths: Array<string>,
-  openFn: (p: string) => string,
-): Record<string, string> {
+  openFn: (p: string) => Promise<string>,
+): Promise<Record<string, string>> {
   const orig: Record<string, string> = {};
-  for (const p of paths) {
-    try {
-      orig[p] = openFn(p);
-    } catch {
-      // Convert any file read error into a DiffError so that callers
-      // consistently receive DiffError for patch-related failures.
-      throw new DiffError(`File not found: ${p}`);
-    }
-  }
+  await Promise.all(
+    paths.map(async (p) => {
+      try {
+        orig[p] = await openFn(p);
+      } catch {
+        // Convert any file read error into a DiffError so that callers
+        // consistently receive DiffError for patch-related failures.
+        throw new DiffError(`File not found: ${p}`);
+      }
+    }),
+  );
+
   return orig;
 }
 
-export function apply_commit(
+export async function apply_commit(
   commit: Commit,
-  writeFn: (p: string, c: string) => void,
-  removeFn: (p: string) => void,
-): void {
+  writeFn: (p: string, c: string) => Promise<void>,
+  removeFn: (p: string) => Promise<void>,
+): Promise<void> {
   for (const [p, change] of Object.entries(commit.changes)) {
     if (change.type === ActionType.DELETE) {
-      removeFn(p);
+      await removeFn(p);
     } else if (change.type === ActionType.ADD) {
-      writeFn(p, change.new_content ?? "");
+      await writeFn(p, change.new_content ?? "");
     } else if (change.type === ActionType.UPDATE) {
       if (change.move_path) {
-        writeFn(change.move_path, change.new_content ?? "");
-        removeFn(p);
+        await writeFn(change.move_path, change.new_content ?? "");
+        await removeFn(p);
       } else {
-        writeFn(p, change.new_content ?? "");
+        await writeFn(p, change.new_content ?? "");
       }
     }
   }
 }
 
-export function process_patch(
+export async function process_patch(
   text: string,
-  openFn: (p: string) => string,
-  writeFn: (p: string, c: string) => void,
-  removeFn: (p: string) => void,
-): string {
+  openFn: (p: string) => Promise<string>,
+  writeFn: (p: string, c: string) => Promise<void>,
+  removeFn: (p: string) => Promise<void>,
+): Promise<string> {
   if (!text.startsWith("*** Begin Patch")) {
     throw new DiffError("Patch must start with *** Begin Patch");
   }
   const paths = identify_files_needed(text);
-  const orig = load_files(paths, openFn);
+  const orig = await load_files(paths, openFn);
   const [patch, _fuzz] = text_to_patch(text, orig);
   const commit = patch_to_commit(patch, orig);
-  apply_commit(commit, writeFn, removeFn);
+  await apply_commit(commit, writeFn, removeFn);
   return "Done!";
 }
 
@@ -596,23 +599,27 @@ export function process_patch(
 // Default filesystem implementations
 // -----------------------------------------------------------------------------
 
-function open_file(p: string): string {
-  return fs.readFileSync(p, "utf8");
+async function open_file(p: string): Promise<string> {
+  const res = await fs.promises.readFile(p, {
+    encoding: "utf8",
+  });
+
+  return res as string;
 }
 
-function write_file(p: string, content: string): void {
+async function write_file(p: string, content: string): Promise<void> {
   if (path.isAbsolute(p)) {
     throw new DiffError("We do not support absolute paths.");
   }
   const parent = path.dirname(p);
   if (parent !== ".") {
-    fs.mkdirSync(parent, { recursive: true });
+    await fs.promises.mkdir(parent);
   }
-  fs.writeFileSync(p, content, "utf8");
+  await fs.promises.writeFile(p, content, "utf8");
 }
 
-function remove_file(p: string): void {
-  fs.unlinkSync(p);
+async function remove_file(p: string): Promise<void> {
+  await fs.promises.unlink(p);
 }
 
 // -----------------------------------------------------------------------------
@@ -623,14 +630,14 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   let patchText = "";
   process.stdin.setEncoding("utf8");
   process.stdin.on("data", (chunk) => (patchText += chunk));
-  process.stdin.on("end", () => {
+  process.stdin.on("end", async () => {
     if (!patchText) {
       // eslint-disable-next-line no-console
       console.error("Please pass patch text through stdin");
       process.exit(1);
     }
     try {
-      const result = process_patch(
+      const result = await process_patch(
         patchText,
         open_file,
         write_file,
@@ -645,3 +652,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     }
   });
 }
+

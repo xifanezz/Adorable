@@ -51,3 +51,4 @@ export interface ResponseFunctionToolCall {
   call_id: string;
   arguments: string;
 }
+

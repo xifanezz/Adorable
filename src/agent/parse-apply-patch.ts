@@ -110,3 +110,4 @@ function appendLine(content: string, line: string) {
   }
   return [content, line].join("\n");
 }
+

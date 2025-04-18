@@ -1,6 +1,7 @@
 "use server";
 
 import { appsTable } from "@/db/schema";
+import { shim } from "@/freestyle-sdk/shim";
 import { db } from "@/lib/db";
 import { freestyle } from "@/lib/freestyle";
 
@@ -18,6 +19,11 @@ export async function createApp() {
       console.error("Error creating git repository:", JSON.stringify(e));
       throw new Error("Failed to create git repository");
     });
+
+  // start the dev server as soon as possible
+  shim(freestyle).requestDevServer({
+    repo: process.env.GIT_ROOT + "/" + repo.repoId,
+  });
 
   const app = await db
     .insert(appsTable)
