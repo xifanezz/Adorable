@@ -38,6 +38,7 @@ export async function POST(req: Request) {
   // We'll use streamText as it's the simplest API for this purpose
   const result = streamText({
     tools: ADORABLE_TOOLS,
+    maxSteps: 15,
     // onFinish({ response: { messages } }) {},
     onStepFinish: async ({ response }) => {
       for (const message of response.messages) {

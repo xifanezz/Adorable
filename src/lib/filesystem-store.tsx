@@ -1,10 +1,11 @@
 "use client";
 
-import { create } from 'zustand';
+import { create } from "zustand";
 import path from "path";
 import git from "isomorphic-git";
 import { fs } from "@/lib/fs";
 import http from "isomorphic-git/http/web";
+import { LsSchema } from "./tools";
 
 export interface FileItem {
   path: string;
@@ -48,7 +49,8 @@ interface FilesystemState {
   currentPath: string;
   repoId: string | null;
   repoUrl: string | null;
-  
+
+  ls: (options: LsSchema) => Promise<FileItem[]>;
   setRepoInfo: (repoId: string, repoUrl: string) => void;
   fetchRepoFiles: () => Promise<void>;
   navigateToFolder: (folderPath: string) => void;
@@ -231,15 +233,60 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
     get().fetchRepoFiles();
   },
 
+  ls: async (options: LsSchema) => {
+    const state = get();
+    const { repoId, repoUrl } = state;
+
+    if (!repoId || !repoUrl) {
+      throw new Error("Repository information not provided");
+    }
+
+    await ensureRepoCloned({ repoId, repoUrl });
+    const repoDir = `/${repoId}`;
+
+    const folderPath = options.path || "";
+    const fullPath = path.join(repoDir, folderPath);
+
+    try {
+      const entries = await fs.promises.readdir(fullPath);
+      const filesList: FileItem[] = await Promise.all(
+        entries
+          .filter((entry) => entry !== ".git")
+          .map(async (entry) => {
+            const entryPath = path.join(fullPath, entry);
+            const stats = await fs.promises.stat(entryPath);
+            const relativePath = path.join(folderPath, entry);
+
+            return {
+              path: relativePath,
+              type: stats.type === "dir" ? "tree" : "blob",
+              size: stats.type === "file" ? stats.size : undefined,
+              contentType:
+                stats.type === "file" ? getContentType(entry) : undefined,
+            };
+          })
+      );
+
+      return filesList;
+    } catch (err) {
+      console.error(`Error listing directory ${folderPath}:`, err);
+      throw new Error(
+        `Failed to list directory: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
+      );
+    }
+  },
+
   fetchRepoFiles: async () => {
     const state = get();
     const { repoId, repoUrl, currentPath } = state;
-    
+
     if (!repoId || !repoUrl) {
       set({ error: "Repository information not provided" });
       return;
     }
-    
+
     set({ loading: true, error: null });
 
     try {
@@ -257,56 +304,54 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
       const pathPrefix = currentPath ? currentPath + "/" : "";
 
       // Process each file path
-      Object.entries(allFiles).forEach(
-        ([filePath, fileInfo]) => {
-          // Skip files not in the current directory
-          if (!currentPath && filePath.includes("/")) {
-            // Root directory - only show top-level files and directories
-            const topLevelName = filePath.split("/")[0];
-            if (!filesList.find((f) => f.path === topLevelName)) {
-              filesList.push({
-                path: topLevelName,
-                type: "tree",
-                size: 0,
-              });
-            }
-            return;
-          } else if (currentPath && !filePath.startsWith(pathPrefix)) {
-            // Not in the current directory
-            return;
-          }
-
-          // For directory listings, we only want direct children
-          const remainingPath = filePath.substring(pathPrefix.length);
-          if (remainingPath.includes("/")) {
-            // This is a nested file, only add the directory
-            const dirName = remainingPath.split("/")[0];
-            if (!filesList.find((f) => f.path === dirName)) {
-              filesList.push({
-                path: dirName,
-                type: "tree",
-                size: 0,
-              });
-            }
-          } else if (remainingPath) {
-            // This is a file in the current directory
+      Object.entries(allFiles).forEach(([filePath, fileInfo]) => {
+        // Skip files not in the current directory
+        if (!currentPath && filePath.includes("/")) {
+          // Root directory - only show top-level files and directories
+          const topLevelName = filePath.split("/")[0];
+          if (!filesList.find((f) => f.path === topLevelName)) {
             filesList.push({
-              path: remainingPath,
-              type: "blob",
-              size: 'error' in fileInfo ? 0 : fileInfo.size,
-              content: 'error' in fileInfo ? '' : (fileInfo.content as string),
-              contentType: getContentType(remainingPath),
-              encoding: "utf-8",
+              path: topLevelName,
+              type: "tree",
+              size: 0,
             });
           }
+          return;
+        } else if (currentPath && !filePath.startsWith(pathPrefix)) {
+          // Not in the current directory
+          return;
         }
-      );
+
+        // For directory listings, we only want direct children
+        const remainingPath = filePath.substring(pathPrefix.length);
+        if (remainingPath.includes("/")) {
+          // This is a nested file, only add the directory
+          const dirName = remainingPath.split("/")[0];
+          if (!filesList.find((f) => f.path === dirName)) {
+            filesList.push({
+              path: dirName,
+              type: "tree",
+              size: 0,
+            });
+          }
+        } else if (remainingPath) {
+          // This is a file in the current directory
+          filesList.push({
+            path: remainingPath,
+            type: "blob",
+            size: "error" in fileInfo ? 0 : fileInfo.size,
+            content: "error" in fileInfo ? "" : (fileInfo.content as string),
+            contentType: getContentType(remainingPath),
+            encoding: "utf-8",
+          });
+        }
+      });
 
       set({ files: filesList });
     } catch (err) {
       console.error("Error fetching repository files:", err);
-      set({ 
-        error: err instanceof Error ? err.message : "Unknown error occurred" 
+      set({
+        error: err instanceof Error ? err.message : "Unknown error occurred",
       });
     } finally {
       set({ loading: false });
@@ -323,14 +368,14 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
     const pathParts = currentPath.split("/");
     pathParts.pop();
     const newPath = pathParts.join("/");
-    
+
     set({ currentPath: newPath });
     get().fetchRepoFiles();
   },
 
   getFileContent: async (filePath) => {
     const { currentPath, files, repoId } = get();
-    
+
     try {
       const fullPath = currentPath ? `${currentPath}/${filePath}` : filePath;
 
@@ -363,8 +408,11 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
         if (repoId) {
           try {
             const repoDir = `/${repoId}`;
-            const content = await fs.promises.readFile(`${repoDir}/${fullPath}`, "utf8");
-            
+            const content = await fs.promises.readFile(
+              `${repoDir}/${fullPath}`,
+              "utf8"
+            );
+
             return {
               content,
               encoding: "utf-8",
@@ -381,7 +429,7 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
             console.error("Error loading file content directly:", err);
           }
         }
-        
+
         // Set some basic info if content isn't available
         return {
           content: "File content not available (possibly too large)",
@@ -400,5 +448,5 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
       console.error("Error loading file content:", err);
       return null;
     }
-  }
+  },
 }));

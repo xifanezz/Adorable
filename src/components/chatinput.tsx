@@ -8,14 +8,13 @@ import {
 } from "@/components/ui/prompt-input";
 import { Button } from "@/components/ui/button";
 import { ArrowUp, Square } from "lucide-react";
-import { useState, useEffect, ChangeEvent } from "react";
+import { useState, useEffect } from "react";
 
 interface PromptInputBasicProps {
-  onSubmit?: (
-    e?: React.FormEvent<HTMLFormElement> | any
-  ) => void;
+  onSubmit?: (e?: React.FormEvent<HTMLFormElement> | any) => void;
   isGenerating?: boolean;
   input?: string;
+  disabled?: boolean;
   onValueChange?: (value: string) => void;
 }
 
@@ -24,9 +23,10 @@ export function PromptInputBasic({
   isGenerating = false,
   input = "",
   onValueChange,
+  disabled,
 }: PromptInputBasicProps) {
   const [isLoading, setIsLoading] = useState(false);
-
+  console.log("DISABLED?", disabled);
   useEffect(() => {
     setIsLoading(isGenerating);
   }, [isGenerating]);
@@ -47,9 +47,10 @@ export function PromptInputBasic({
       </PromptInput>
       <div className="absolute right-3 bottom-3">
         <Button
-          variant={isLoading ? "destructive" : "default"}
+          variant={disabled ? "ghost" : isLoading ? "destructive" : "default"}
           size="icon"
           className="h-8 w-8 rounded-full"
+          disabled={disabled}
           onClick={() => handleSubmit?.()}
         >
           {isLoading ? (
