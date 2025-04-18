@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     return new Response("Missing appId header", { status: 400 });
   }
 
-  const { messages, id }: { id: string; messages: Array<Message> } =
+  const { messages }: { id: string; messages: Array<Message> } =
     await req.json();
 
   // get the last message, if it exists
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     .insert(messagesTable)
     .values({
       appId: appId,
-      id: id,
+      id: crypto.randomUUID(),
       createdAt: new Date(),
       message: convertToCoreMessages([lastMessage])[0],
     })
@@ -38,6 +38,7 @@ export async function POST(req: Request) {
   // We'll use streamText as it's the simplest API for this purpose
   const result = streamText({
     tools: ADORABLE_TOOLS,
+    maxSteps: 15,
     // onFinish({ response: { messages } }) {},
     onStepFinish: async ({ response }) => {
       for (const message of response.messages) {

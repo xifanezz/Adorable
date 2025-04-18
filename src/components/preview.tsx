@@ -1,14 +1,9 @@
 "use client";
 
-import { useChat } from "@ai-sdk/react";
 import FileSystem from "./filesystem";
 import WebView from "./webview";
 
 export default function Preview(props: { repo: string; activeView: string }) {
-  useChat({
-    api: "/api/chat",
-  });
-
   return (
     <div className="h-full pt-4 overflow-y-auto p-4 relative">
       <div className="grid grid-cols-1 grid-rows-1 w-full h-full">

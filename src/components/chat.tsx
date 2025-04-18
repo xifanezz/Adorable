@@ -3,7 +3,7 @@
 import { useChat } from "@ai-sdk/react";
 import { PromptInputBasic } from "./chatinput";
 import { Markdown } from "./ui/markdown";
-import { ChangeEvent } from "react";
+import { ChangeEvent, useState } from "react";
 import Image from "next/image";
 import LogoSvg from "@/logo.svg";
 import { cn } from "@/lib/utils";
@@ -11,6 +11,8 @@ import { motion, AnimatePresence } from "motion/react";
 import { ChatContainer } from "./ui/chat-container";
 // import { ADORABLE_TOOLS } from "@/lib/tools";
 import { Message } from "ai";
+import { useFilesystemStore } from "@/lib/filesystem-store";
+import { LsSchema } from "@/lib/tools";
 
 export default function Chat(props: {
   appId: string;
@@ -22,14 +24,47 @@ export default function Chat(props: {
     props.initialMessages,
     props.initialMessages[0]
   );
-  const { messages, handleSubmit, input, handleInputChange, status } = useChat({
+  const [enabled, setEnabled] = useState(true);
+  const filesystemStore = useFilesystemStore();
+  const {
+    messages,
+    handleSubmit,
+    input,
+    handleInputChange,
+    status,
+    addToolResult,
+  } = useChat({
     initialMessages: props.initialMessages,
     generateId: () => {
       return "x-" + crypto.randomUUID();
     },
+    onToolCall: async (tool) => {
+      console.log("Tool called", tool);
+      if (tool.toolCall.toolName === "ls") {
+        setEnabled(false);
+        const res = await filesystemStore
+          .ls(tool.toolCall.args as LsSchema)
+          .catch((e) => {
+            console.error("Error calling ls tool", e);
+            return {
+              error: e,
+            };
+          });
+        addToolResult({
+          toolCallId: tool.toolCall.toolCallId,
+          result: res,
+        });
+        setEnabled(true);
+        return res;
+      }
+    },
+    onFinish: async (message) => {
+      console.log("Message finished", message);
+    },
     headers: {
       "Adorable-App-Id": props.appId,
     },
+
     api: "/api/chat",
   });
 
@@ -42,6 +77,9 @@ export default function Chat(props: {
 
   // Create a submission handler
   const onSubmit = (e?: Event) => {
+    if (!enabled) {
+      return;
+    }
     if (e?.preventDefault) {
       e.preventDefault();
     }
@@ -135,13 +173,16 @@ export default function Chat(props: {
                               </Markdown>
                             </div>
                           );
-                        } else if (part.type && part.type !== "step-start") {
+                        } else if (
+                          part.type &&
+                          part.type === "tool-invocation"
+                        ) {
                           return (
                             <div
                               key={index}
                               className="mb-2 text-xs bg-gray-100 dark:bg-gray-800 p-2.5 rounded-lg"
                             >
-                              {JSON.stringify(part)}
+                              {JSON.stringify(part.toolInvocation)}
                             </div>
                           );
                         }
@@ -173,6 +214,7 @@ export default function Chat(props: {
         <PromptInputBasic
           input={input || ""}
           onSubmit={onSubmit}
+          disabled={!enabled}
           onValueChange={onValueChange}
           isGenerating={status === "streaming" || status === "submitted"}
         />
