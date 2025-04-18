@@ -135,13 +135,16 @@ export default function Chat(props: {
                               </Markdown>
                             </div>
                           );
-                        } else if (part.type && part.type !== "step-start") {
+                        } else if (
+                          part.type &&
+                          part.type === "tool-invocation"
+                        ) {
                           return (
                             <div
                               key={index}
                               className="mb-2 text-xs bg-gray-100 dark:bg-gray-800 p-2.5 rounded-lg"
                             >
-                              {JSON.stringify(part)}
+                              {JSON.stringify(part.toolInvocation)}
                             </div>
                           );
                         }

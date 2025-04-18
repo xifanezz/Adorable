@@ -22,7 +22,7 @@ export async function createApp() {
 
   // start the dev server as soon as possible
   shim(freestyle).requestDevServer({
-    repo: process.env.GIT_ROOT + "/" + repo.repoId,
+    repo: process.env.GIT_ROOT + repo.repoId,
   });
 
   const app = await db

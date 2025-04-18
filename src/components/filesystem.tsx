@@ -1,196 +1,30 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import path from "path";
-import git from "isomorphic-git";
-import { fs } from "@/lib/fs";
-import http from "isomorphic-git/http/web";
-
-interface FileItem {
-  path: string;
-  type: "tree" | "blob";
-  size?: number;
-  content?: string;
-  contentType?: string;
-  encoding?: string;
-}
-
-interface FileContent {
-  content: string;
-  encoding: string;
-  contentType: string;
-  size: number;
-  path: string;
-  commit: {
-    oid: string;
-    message: string;
-    date: number;
-  };
-}
-
-type FileInfo =
-  | {
-      size?: number;
-      type?: string;
-      content?: string | Uint8Array;
-      path?: string;
-      isBinary?: boolean;
-      isLarge?: boolean;
-    }
-  | {
-      error: string;
-    };
-
-async function ensureRepoCloned({
-  repoId,
-  repoUrl,
-}: {
-  repoId: string;
-  repoUrl: string;
-}) {
-  const dir = `/${repoId}`;
-  const isRepoCloned = await fs.promises
-    .stat(dir)
-    .then(() => true)
-    .catch(() => false);
-
-  if (!isRepoCloned) {
-    await cloneRepo({ repoId, repoUrl });
-  }
-}
-
-async function cloneRepo({
-  repoId,
-  repoUrl,
-}: {
-  repoId: string;
-  repoUrl: string;
-}) {
-  await git.clone({
-    url: repoUrl,
-    fs,
-    http,
-    dir: `/${repoId}`,
-  });
-}
-
-// Function to recursively read directory and files
-async function processDirectory(
-  dirPath: string,
-  relativeDir: string = ""
-): Promise<Record<string, FileInfo>> {
-  const entries = await fs.promises.readdir(dirPath);
-
-  const files = await Promise.all(
-    entries
-      .filter((entry) => entry !== ".git")
-      .map(async (entry) => {
-        const fullPath = path.join(dirPath, entry);
-        const relativePath = relativeDir
-          ? path.join(relativeDir, entry)
-          : entry;
-
-        const entryInfo = await fs.promises.stat(fullPath);
-
-        if (entryInfo.type == "dir") {
-          // Recursively process subdirectories
-          return await processDirectory(fullPath, relativePath);
-        } else {
-          const filesRecord: Record<string, FileInfo> = {};
-
-          // Process files
-          try {
-            const fileInfo: Partial<FileInfo> = {
-              size: entryInfo.size,
-              type: "file",
-              path: relativePath,
-            };
-
-            // For small text files, include content directly
-            if (entryInfo.size < 500000) {
-              // 500KB limit
-              try {
-                const content = await fs.promises.readFile(fullPath, "utf8");
-                fileInfo.content = content;
-              } catch {
-                // If UTF-8 fails, it might be binary
-                fileInfo.isBinary = true;
-              }
-            } else {
-              fileInfo.isLarge = true;
-            }
-
-            // Save file info to record
-            filesRecord[relativePath] = fileInfo;
-          } catch (fileError) {
-            console.warn(`Error processing file ${relativePath}:`, fileError);
-            filesRecord[relativePath] = { error: "Failed to process file" };
-          }
-
-          return filesRecord;
-        }
-      })
-  ).then((records) =>
-    records.reduce((acc, record) => ({ ...acc, ...record }), {})
-  );
-
-  return files;
-}
-
-async function getRepoInfo(props: { repoId: string; repoUrl: string }) {
-  await ensureRepoCloned(props);
-  const repoDir = `/${props.repoId}`;
-
-  // Get git info about the repo
-  const currentBranch = await git.currentBranch({
-    fs,
-    dir: repoDir,
-    fullname: true,
-  });
-  if (!currentBranch) {
-    throw new Error("Detected detached HEAD");
-  }
-
-  const latestCommit = await git
-    .log({
-      fs,
-      dir: repoDir,
-      ref: currentBranch,
-      depth: 1,
-    })
-    .then((logs) => logs.at(0));
-
-  const repoInfo = {
-    branch: currentBranch,
-    commit: latestCommit
-      ? {
-          hash: latestCommit?.oid,
-          message: latestCommit?.commit.message,
-          author: latestCommit?.commit.author.name,
-          timestamp: latestCommit?.commit.author.timestamp,
-        }
-      : undefined,
-  };
-
-  // Process all files in the repository
-  const filesRecord = await processDirectory(repoDir);
-  console.log(`Processed ${Object.keys(filesRecord).length} files`);
-
-  return {
-    files: filesRecord,
-    repo: repoInfo,
-    clonedAt: new Date().toISOString(),
-  };
-}
+import { useEffect, useMemo, useState } from "react";
+import { useFilesystemStore, FileContent } from "@/lib/filesystem-store";
+import { useCurrentRepo } from "./app-wrapper";
+import { ArrowLeftIcon, FileIcon, FolderIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Markdown } from "./ui/markdown";
 
 export default function FileSystem({ repoUrl }: { repoUrl: string }) {
-  const [files, setFiles] = useState<FileItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [currentPath, setCurrentPath] = useState<string>("");
+  const repoId = useCurrentRepo();
+  const {
+    files,
+    loading,
+    error,
+    currentPath,
+    setRepoInfo,
+    fetchRepoFiles,
+    navigateToFolder,
+    navigateUp,
+    getFileContent,
+  } = useFilesystemStore();
+
+  // Local state for file selection
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<FileContent | null>(null);
   const [loadingContent, setLoadingContent] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<string | null>(null);
 
   const readme = useMemo(() => {
     if (loading || loadingContent) {
@@ -202,7 +36,8 @@ export default function FileSystem({ repoUrl }: { repoUrl: string }) {
           f.type === "blob" && (f.path === "README.md" || f.path === "README")
       )?.path ?? null
     );
-  }, [files]);
+  }, [files, loading, loadingContent]);
+
   useEffect(() => {
     if (readme !== null && selectedFile === null) {
       viewFile(readme);
@@ -210,171 +45,21 @@ export default function FileSystem({ repoUrl }: { repoUrl: string }) {
       setSelectedFile(null);
       setFileContent(null);
     }
-  }, [readme, selectedFile]);
-
-  const repoId = useCurrentRepo();
-
-  const fetchRepoFiles = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      console.log(`Repository URL: ${repoUrl}`);
-      const data = await getRepoInfo({
-        repoId,
-        repoUrl,
-      });
-
-      // Convert the files record to an array for the current path
-      const allFiles = data.files || {};
-      const filesList: FileItem[] = [];
-
-      // Get files and directories at the current path
-      const pathPrefix = currentPath ? currentPath + "/" : "";
-
-      // Process each file path
-      Object.entries(allFiles).forEach(
-        ([filePath, fileInfo]: [string, any]) => {
-          // Skip files not in the current directory
-          if (!currentPath && filePath.includes("/")) {
-            // Root directory - only show top-level files and directories
-            const topLevelName = filePath.split("/")[0];
-            if (!filesList.find((f) => f.path === topLevelName)) {
-              filesList.push({
-                path: topLevelName,
-                type: "tree",
-                size: 0,
-              });
-            }
-            return;
-          } else if (currentPath && !filePath.startsWith(pathPrefix)) {
-            // Not in the current directory
-            return;
-          }
-
-          // For directory listings, we only want direct children
-          const remainingPath = filePath.substring(pathPrefix.length);
-          if (remainingPath.includes("/")) {
-            // This is a nested file, only add the directory
-            const dirName = remainingPath.split("/")[0];
-            if (!filesList.find((f) => f.path === dirName)) {
-              filesList.push({
-                path: dirName,
-                type: "tree",
-                size: 0,
-              });
-            }
-          } else if (remainingPath) {
-            // This is a file in the current directory
-            filesList.push({
-              path: remainingPath,
-              type: "blob",
-              size: fileInfo.size,
-              content: fileInfo.content,
-              contentType: getContentType(remainingPath),
-              encoding: "utf-8",
-            });
-          }
-        }
-      );
-
-      setFiles(filesList);
-    } catch (err) {
-      console.error("Error fetching repository files:", err);
-      setError(err instanceof Error ? err.message : "Unknown error occurred");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Helper function to determine content type
-  const getContentType = (filePath: string): string => {
-    const ext = path.extname(filePath).toLowerCase();
-    const contentTypeMap: Record<string, string> = {
-      ".js": "application/javascript",
-      ".jsx": "application/javascript",
-      ".ts": "application/typescript",
-      ".tsx": "application/typescript",
-      ".html": "text/html",
-      ".css": "text/css",
-      ".json": "application/json",
-      ".md": "text/markdown",
-      ".txt": "text/plain",
-      ".yaml": "application/yaml",
-      ".yml": "application/yaml",
-    };
-
-    return contentTypeMap[ext] || "text/plain";
-  };
+  }, [readme, selectedFile, files]);
 
   useEffect(() => {
-    fetchRepoFiles();
-  }, [currentPath]);
+    setRepoInfo(repoId, repoUrl);
+  }, [repoId, repoUrl, setRepoInfo]);
 
-  const navigateToFolder = (folderPath: string) => {
-    setCurrentPath(folderPath);
-    setSelectedFile(null);
-    setFileContent(null);
-  };
-
-  const navigateUp = () => {
-    const pathParts = currentPath.split("/");
-    pathParts.pop();
-    setCurrentPath(pathParts.join("/"));
-    setSelectedFile(null);
-    setFileContent(null);
-  };
-
-  const viewFile = (filePath: string) => {
+  const viewFile = async (filePath: string) => {
     setLoadingContent(true);
-    setError(null);
     setSelectedFile(filePath);
-
+    
     try {
-      const fullPath = currentPath ? `${currentPath}/${filePath}` : filePath;
-
-      // Find the file in our existing files data
-      const selectedFileData = files.find((f) => {
-        const fileFullPath = currentPath ? `${currentPath}/${f.path}` : f.path;
-        return fileFullPath === fullPath || f.path === fullPath;
-      });
-
-      if (!selectedFileData) {
-        throw new Error(`File not found: ${fullPath}`);
-      }
-
-      // If the file has content, use it directly
-      if (selectedFileData.content) {
-        setFileContent({
-          content: selectedFileData.content,
-          encoding: selectedFileData.encoding || "utf-8",
-          contentType: selectedFileData.contentType || "text/plain",
-          size: selectedFileData.size || 0,
-          path: fullPath,
-          commit: {
-            oid: "latest",
-            message: "Current version",
-            date: Date.now(),
-          },
-        });
-      } else {
-        // Set some basic info if content isn't available
-        setFileContent({
-          content: "File content not available (possibly too large)",
-          encoding: "utf-8",
-          contentType: selectedFileData.contentType || "text/plain",
-          size: selectedFileData.size || 0,
-          path: fullPath,
-          commit: {
-            oid: "latest",
-            message: "Current version",
-            date: Date.now(),
-          },
-        });
-      }
+      const content = await getFileContent(filePath);
+      setFileContent(content);
     } catch (err) {
-      console.error("Error loading file content:", err);
-      setError(err instanceof Error ? err.message : "Unknown error occurred");
+      console.error("Error in viewFile:", err);
     } finally {
       setLoadingContent(false);
     }
@@ -404,8 +89,7 @@ export default function FileSystem({ repoUrl }: { repoUrl: string }) {
           <div className="mt-3">
             <button
               onClick={() => {
-                setError(null);
-                setLoading(true);
+                useFilesystemStore.setState({ error: null });
                 fetchRepoFiles();
               }}
               className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
@@ -567,18 +251,18 @@ export default function FileSystem({ repoUrl }: { repoUrl: string }) {
           {isImage ? (
             <div className="flex justify-center">
               <img
-                src={`data:${fileContent.contentType};base64,${fileContent.content}`}
+                src={`data:${fileContent.contentType};base64,${typeof fileContent.content === 'string' ? fileContent.content : ''}`}
                 alt={selectedFile}
                 className="max-w-full h-auto rounded"
               />
             </div>
           ) : isMarkdown ? (
             <div className="prose-container">
-              <Markdown>{fileContent.content}</Markdown>
+              <Markdown>{typeof fileContent.content === 'string' ? fileContent.content : ''}</Markdown>
             </div>
           ) : isText ? (
             <pre className="text-sm overflow-x-auto p-2 bg-gray-50 dark:bg-gray-950 rounded max-h-96">
-              <code>{fileContent.content}</code>
+              <code>{typeof fileContent.content === 'string' ? fileContent.content : ''}</code>
             </pre>
           ) : (
             <div className="text-center p-4 text-gray-500">
@@ -593,7 +277,7 @@ export default function FileSystem({ repoUrl }: { repoUrl: string }) {
             <div>Commit: {fileContent.commit.oid.substring(0, 7)}</div>
             <div className="truncate">{fileContent.commit.message}</div>
             <div>
-              {new Date(fileContent.commit.date * 1000).toLocaleString()}
+              {new Date(fileContent.commit.date).toLocaleString()}
             </div>
           </div>
         )}
@@ -610,9 +294,3 @@ export default function FileSystem({ repoUrl }: { repoUrl: string }) {
     </div>
   );
 }
-
-// Import needed for Markdown rendering
-import { Markdown } from "./ui/markdown";
-import { useCurrentRepo } from "./app-wrapper";
-import { ArrowLeftIcon, FileIcon, FolderIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
