@@ -11,8 +11,10 @@ import { motion, AnimatePresence } from "motion/react";
 import { ChatContainer } from "./ui/chat-container";
 import { Message } from "ai";
 import { useFilesystemStore } from "@/lib/filesystem-store";
-import { ApplyPatchSchema, LsSchema, ReadFileSchema } from "@/lib/tools";
+import { ApplyPatchSchema } from "@/lib/tools";
 import { ReviewDecision } from "@/agent";
+import { CatSchema, GrepSchema, LsSchema } from "@/lib/tools";
+import { ToolRenderer } from "./ToolRenderer";
 
 interface PatchApprovalDialogProps {
   patch: string;
@@ -48,7 +50,9 @@ function PatchApprovalDialog({ patch, onDecision }: PatchApprovalDialogProps) {
           </button>
           <button
             className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
-            onClick={() => onDecision(ReviewDecision.NO_CONTINUE, customMessage)}
+            onClick={() =>
+              onDecision(ReviewDecision.NO_CONTINUE, customMessage)
+            }
           >
             Reject & Continue
           </button>
@@ -72,8 +76,8 @@ function PatchApprovalDialog({ patch, onDecision }: PatchApprovalDialogProps) {
 
 // Display commit and push notifications
 function GitStatusNotification({
-  lastCommitInfo, 
-  lastPushInfo
+  lastCommitInfo,
+  lastPushInfo,
 }: {
   lastCommitInfo: {
     hash: string;
@@ -88,7 +92,7 @@ function GitStatusNotification({
 }) {
   const [showCommit, setShowCommit] = useState(!!lastCommitInfo);
   const [showPush, setShowPush] = useState(!!lastPushInfo);
-  
+
   // Auto-hide notifications after 5 seconds
   useEffect(() => {
     if (lastCommitInfo) {
@@ -97,7 +101,7 @@ function GitStatusNotification({
       return () => clearTimeout(timer);
     }
   }, [lastCommitInfo]);
-  
+
   useEffect(() => {
     if (lastPushInfo) {
       setShowPush(true);
@@ -105,17 +109,17 @@ function GitStatusNotification({
       return () => clearTimeout(timer);
     }
   }, [lastPushInfo]);
-  
+
   if (!showCommit && !showPush) return null;
-  
+
   return (
     <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
       {showCommit && lastCommitInfo && (
         <div className="bg-gray-800 text-white p-3 rounded shadow-lg max-w-md">
           <div className="flex justify-between items-center mb-1">
             <span className="font-medium">Commit Created</span>
-            <button 
-              className="text-gray-400 hover:text-white" 
+            <button
+              className="text-gray-400 hover:text-white"
               onClick={() => setShowCommit(false)}
             >
               ×
@@ -123,19 +127,24 @@ function GitStatusNotification({
           </div>
           <div className="text-sm text-gray-300">{lastCommitInfo.message}</div>
           <div className="text-xs text-gray-400 mt-1">
-            {lastCommitInfo.hash.substring(0, 7)} • {lastCommitInfo.timestamp.toLocaleTimeString()}
+            {lastCommitInfo.hash.substring(0, 7)} •{" "}
+            {lastCommitInfo.timestamp.toLocaleTimeString()}
           </div>
         </div>
       )}
-      
+
       {showPush && lastPushInfo && (
-        <div className={`p-3 rounded shadow-lg max-w-md ${lastPushInfo.success ? 'bg-green-600' : 'bg-red-600'} text-white`}>
+        <div
+          className={`p-3 rounded shadow-lg max-w-md ${
+            lastPushInfo.success ? "bg-green-600" : "bg-red-600"
+          } text-white`}
+        >
           <div className="flex justify-between items-center mb-1">
             <span className="font-medium">
-              {lastPushInfo.success ? 'Push Successful' : 'Push Failed'}
+              {lastPushInfo.success ? "Push Successful" : "Push Failed"}
             </span>
-            <button 
-              className="text-gray-200 hover:text-white" 
+            <button
+              className="text-gray-200 hover:text-white"
               onClick={() => setShowPush(false)}
             >
               ×
@@ -161,12 +170,12 @@ export default function Chat(props: {
   const [showPatchDialog, setShowPatchDialog] = useState(false);
   const [currentPatch, setCurrentPatch] = useState("");
   const [pendingToolCall, setPendingToolCall] = useState<any>(null);
-  
+
   // Get filesystem store state for git operations
   const filesystemStore = useFilesystemStore();
   const lastCommitInfo = filesystemStore.lastCommitInfo;
   const lastPushInfo = filesystemStore.lastPushInfo;
-  
+
   const {
     messages,
     handleSubmit,
@@ -176,10 +185,13 @@ export default function Chat(props: {
     addToolResult,
   } = useChat({
     initialMessages: props.initialMessages,
-
+    generateId: () => {
+      return "cs-" + crypto.randomUUID();
+    },
+    sendExtraMessageFields: true,
     onToolCall: async (tool) => {
       console.log("Tool called", tool);
-      
+
       if (tool.toolCall.toolName === "ls") {
         setEnabled(false);
         try {
@@ -191,47 +203,28 @@ export default function Chat(props: {
                 error: e.message || String(e),
               };
             });
-          
+
           addToolResult({
             toolCallId: tool.toolCall.toolCallId,
             result: res,
           });
-          
+
           return res;
         } finally {
           setEnabled(true);
         }
       }
-      
-      if (tool.toolCall.toolName === "readFile") {
-        setEnabled(false);
-        try {
-          const { path } = tool.toolCall.args as ReadFileSchema;
-          const content = await filesystemStore.readFile(path);
-          
-          const result = content || `Error: File not found or cannot be read: ${path}`;
-          
-          addToolResult({
-            toolCallId: tool.toolCall.toolCallId,
-            result,
-          });
-          
-          return result;
-        } finally {
-          setEnabled(true);
-        }
-      }
-      
+
       if (tool.toolCall.toolName === "applyPatch") {
         setEnabled(false);
         try {
           const { patch } = tool.toolCall.args as ApplyPatchSchema;
-          
+
           // Save current patch and tool call for the approval dialog
           setCurrentPatch(patch);
           setPendingToolCall(tool);
           setShowPatchDialog(true);
-          
+
           // The actual result will be handled when the user makes a decision
           // Return a promise that will be resolved later
           return new Promise((resolve) => {
@@ -244,22 +237,68 @@ export default function Chat(props: {
         } catch (error) {
           setEnabled(true);
           console.error("Error with applyPatch", error);
-          
-          const errorMessage = error instanceof Error 
-            ? error.message 
-            : String(error);
-            
+
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+
           addToolResult({
             toolCallId: tool.toolCall.toolCallId,
             result: `Error: ${errorMessage}`,
           });
-          
+
           return `Error: ${errorMessage}`;
         }
       }
-    },
-    onFinish: async (message) => {
-      console.log("Message finished", message);
+      if (tool.toolCall.toolName === "cat") {
+        setEnabled(false);
+        let res;
+        try {
+          const fileContent = await filesystemStore.getFileContent(
+            (tool.toolCall.args as CatSchema).path
+          );
+          // For chat display, we only need the content as a string
+          res =
+            typeof fileContent?.content === "string"
+              ? fileContent.content
+              : "File content not available";
+        } catch (e) {
+          res = {
+            error: e instanceof Error ? e.message : String(e),
+          };
+        }
+
+        await addToolResult({
+          toolCallId: tool.toolCall.toolCallId,
+          result: res,
+        });
+
+        setEnabled(true);
+      }
+      if (tool.toolCall.toolName === "grep") {
+        setEnabled(false);
+        let res;
+        try {
+          // Call the grep method from filesystemStore
+          res = await filesystemStore
+            .grep(tool.toolCall.args as GrepSchema)
+            .catch((e) => {
+              return {
+                error: e instanceof Error ? e.message : String(e),
+              };
+            });
+        } catch (e) {
+          res = {
+            error: e instanceof Error ? e.message : String(e),
+          };
+        }
+
+        await addToolResult({
+          toolCallId: tool.toolCall.toolCallId,
+          result: res,
+        });
+
+        setEnabled(true);
+      }
     },
     headers: {
       "Adorable-App-Id": props.appId,
@@ -268,45 +307,50 @@ export default function Chat(props: {
   });
 
   // Handle patch approval decision
-  const handlePatchDecision = async (decision: ReviewDecision, message?: string) => {
+  const handlePatchDecision = async (
+    decision: ReviewDecision,
+    message?: string
+  ) => {
     if (!pendingToolCall) return;
-    
+
     setShowPatchDialog(false);
-    
+
     try {
       let result: string;
-      
-      if (decision === ReviewDecision.YES || decision === ReviewDecision.ALWAYS) {
+
+      if (
+        decision === ReviewDecision.YES ||
+        decision === ReviewDecision.ALWAYS
+      ) {
         // Apply the patch
         const { patch } = pendingToolCall.toolCall.args as ApplyPatchSchema;
         result = await filesystemStore.applyPatch(patch);
       } else {
         // Rejected
-        result = `Changes rejected by user${message ? `: ${message}` : '.'}`;
+        result = `Changes rejected by user${message ? `: ${message}` : "."}`;
       }
-      
+
       // Return the result to the AI
       addToolResult({
         toolCallId: pendingToolCall.toolCall.toolCallId,
         result,
       });
-      
+
       // Resolve the pending promise
       if (pendingToolCall.resolve) {
         pendingToolCall.resolve(result);
       }
     } catch (error) {
       console.error("Error handling patch decision", error);
-      
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : String(error);
-        
+
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
       addToolResult({
         toolCallId: pendingToolCall.toolCall.toolCallId,
         result: `Error: ${errorMessage}`,
       });
-      
+
       if (pendingToolCall.resolve) {
         pendingToolCall.resolve(`Error: ${errorMessage}`);
       }
@@ -338,17 +382,17 @@ export default function Chat(props: {
   return (
     <div className="flex flex-col h-full">
       {showPatchDialog && (
-        <PatchApprovalDialog 
-          patch={currentPatch} 
-          onDecision={handlePatchDecision} 
+        <PatchApprovalDialog
+          patch={currentPatch}
+          onDecision={handlePatchDecision}
         />
       )}
-      
-      <GitStatusNotification 
-        lastCommitInfo={lastCommitInfo} 
-        lastPushInfo={lastPushInfo} 
+
+      <GitStatusNotification
+        lastCommitInfo={lastCommitInfo}
+        lastPushInfo={lastPushInfo}
       />
-      
+
       <div className="flex-1 overflow-y-auto p-3 flex flex-col space-y-6">
         <ChatContainer autoScroll>
           <AnimatePresence>
@@ -368,26 +412,27 @@ export default function Chat(props: {
                   {message.role === "user" ? null : (
                     <div className="flex items-center h-8">
                       <AnimatePresence mode="popLayout">
-                        {index === messages.length - 1 && message.role === "assistant" && (
-                          <motion.div
-                            key="logo"
-                            className="z-[-1]"
-                            initial={{ y: 20, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            exit={{ y: 20, opacity: 0 }}
-                            transition={{
-                              type: "spring",
-                              stiffness: 300,
-                              damping: 25,
-                            }}
-                          >
-                            <Image
-                              className="h-8 w-8 z-[-1] mr-2"
-                              src={LogoSvg}
-                              alt="Logo"
-                            />
-                          </motion.div>
-                        )}
+                        {index === messages.length - 1 &&
+                          message.role === "assistant" && (
+                            <motion.div
+                              key="logo"
+                              className="z-[-1]"
+                              initial={{ y: 20, opacity: 0 }}
+                              animate={{ y: 0, opacity: 1 }}
+                              exit={{ y: 20, opacity: 0 }}
+                              transition={{
+                                type: "spring",
+                                stiffness: 300,
+                                damping: 25,
+                              }}
+                            >
+                              <Image
+                                className="h-8 w-8 z-[-1] mr-2"
+                                src={LogoSvg}
+                                alt="Logo"
+                              />
+                            </motion.div>
+                          )}
                         <motion.p
                           className={cn(
                             "text-xs font-medium text-gray-500",
@@ -439,15 +484,12 @@ export default function Chat(props: {
                           part.type === "tool-invocation"
                         ) {
                           return (
-                            <div
+                            <ToolRenderer
                               key={index}
-                              className="mb-2 text-xs bg-gray-100 dark:bg-gray-800 p-2.5 rounded-lg"
-                            >
-                              {JSON.stringify(part.toolInvocation)}
-                            </div>
+                              toolInvocation={part.toolInvocation}
+                            />
                           );
                         }
-                        return null;
                       })
                     ) : message.content ? (
                       <Markdown className="prose prose-sm dark:prose-invert max-w-none">

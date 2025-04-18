@@ -3,7 +3,7 @@
 import { getApp } from "@/actions/get-app";
 import AppWrapper from "../../../components/app-wrapper";
 import { redirect } from "next/navigation";
-import * as utils from "@ai-sdk/ui-utils";
+
 export default async function IdPage({
   params,
 }: {
@@ -16,8 +16,6 @@ export default async function IdPage({
     redirect("/");
   }
 
-  console.log("Git Repo", app.info.gitRepo);
-  console.log("MESSAGES", app.messages);
   return (
     <AppWrapper
       appName={app.info.name}

@@ -1,64 +1,35 @@
-import { messagesTable } from "@/db/schema";
-import { db } from "@/lib/db";
+import { saveResponseMessages } from "@/lib/db";
+import { ANTHROPIC_MODEL } from "@/lib/model";
 import { ADORABLE_TOOLS } from "@/lib/tools";
-import { anthropic } from "@ai-sdk/anthropic";
-import {
-  AssistantContent,
-  convertToCoreMessages,
-  Message,
-  StepResult,
-  streamText,
-} from "ai";
-
-// Allow streaming responses up to 30 seconds
-export const maxDuration = 30;
+import { getAppIdFromHeaders } from "@/lib/utils";
+import { createIdGenerator, Message, streamText } from "ai";
 
 export async function POST(req: Request) {
-  const appId = req.headers.get("Adorable-App-Id");
+  const appId = getAppIdFromHeaders(req);
   if (!appId) {
-    return new Response("Missing appId header", { status: 400 });
+    return new Response("Missing App Id header", { status: 400 });
   }
 
   const { messages }: { id: string; messages: Array<Message> } =
     await req.json();
 
-  // get the last message, if it exists
-  const lastMessage = messages.slice(-1)[0];
-
-  await db
-    .insert(messagesTable)
-    .values({
-      appId: appId,
-      id: crypto.randomUUID(),
-      createdAt: new Date(),
-      message: convertToCoreMessages([lastMessage])[0],
-    })
-    .returning();
-
-  // We'll use streamText as it's the simplest API for this purpose
   const result = streamText({
     tools: ADORABLE_TOOLS,
     maxSteps: 15,
-    onStepFinish: async ({ response }) => {
-      for (const message of response.messages) {
-        console.log(
-          "Message saved",
-          await db
-            .insert(messagesTable)
-            .values({
-              appId: appId,
-              id: message.id,
-              createdAt: new Date(),
-              message,
-            })
-            .returning()
-        );
-      }
+
+    experimental_generateMessageId: createIdGenerator({
+      prefix: "server-",
+    }),
+    onFinish: async ({ response }) => {
+      await saveResponseMessages({
+        appId,
+        messages,
+        responseMessages: response.messages,
+      });
     },
 
-    model: anthropic("claude-3-7-sonnet-20250219"),
-    system: `You are a helpful assistant who helps users build web applications. 
-You have the ability to view and modify files in the user's project.
+    model: ANTHROPIC_MODEL,
+    system: `You are Styley, the Adorable AI App Builder Assistant. You read the code for a website, and do what you're told to make it better. You have the ability to view and modify files in the user's project.
 
 Available tools:
 - ls: List files in a directory
@@ -93,7 +64,7 @@ Always respond in a helpful, concise manner. Provide clear explanations for your
     messages,
   });
 
-  result.consumeStream();
+  result.consumeStream(); // keep going even if the client disconnects
 
   return result.toDataStreamResponse();
 }

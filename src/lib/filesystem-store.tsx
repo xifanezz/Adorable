@@ -6,14 +6,14 @@ import path from "path";
 import git from "isomorphic-git";
 import { fs } from "@/lib/fs";
 import http from "isomorphic-git/http/web";
-import { LsSchema } from "./tools";
 import { process_patch } from "@/agent/apply-patch";
-import { freestyle } from "./freestyle";
+
 import {
   createGitAccessToken,
   createGitIdentity,
   grantRepoAccess,
 } from "@/actions/git-credentials";
+import { CatSchema, GrepSchema, LsSchema } from "./tools";
 
 export interface FileItem {
   path: string;
@@ -61,6 +61,18 @@ type FileInfo =
       error: string;
     };
 
+// Type for grep match results
+export interface GrepMatch {
+  file: string;
+  line: number;
+  content: string;
+  column?: number;
+  matches?: Array<{
+    start: number;
+    end: number;
+  }>;
+}
+
 interface FilesystemState {
   files: FileItem[];
   loading: boolean;
@@ -79,11 +91,13 @@ interface FilesystemState {
     error?: string;
   } | null;
 
-  ls: (options: LsSchema) => Promise<FileItem[]>;
   readFile: (path: string) => Promise<string | null>;
   applyPatch: (patchText: string) => Promise<string>;
   commitChanges: (message: string) => Promise<GitCommitResult>;
   pushChanges: () => Promise<GitPushResult>;
+  cat: (options: CatSchema) => Promise<FileContent | null>;
+  ls: (options: LsSchema) => Promise<FileItem[]>;
+  grep: (options: GrepSchema) => Promise<GrepMatch[]>;
   setRepoInfo: (repoId: string, repoUrl: string) => void;
   navigateToFolder: (folderPath: string) => void;
   navigateUp: () => void;
@@ -158,8 +172,8 @@ export const useLocalGitCredentialsStore = create<LocalGitCredentialsStore>()(
     {
       name: "adorable-git-credentials",
       storage: createJSONStorage(() => localStorage),
-    },
-  ),
+    }
+  )
 );
 
 async function ensureRepoCloned({
@@ -207,7 +221,7 @@ async function cloneRepo({
 // Function to recursively read directory and files
 async function processDirectory(
   dirPath: string,
-  relativeDir: string = "",
+  relativeDir: string = ""
 ): Promise<Record<string, FileInfo>> {
   const entries = await fs.promises.readdir(dirPath);
 
@@ -259,9 +273,9 @@ async function processDirectory(
 
           return filesRecord;
         }
-      }),
+      })
   ).then((records) =>
-    records.reduce((acc, record) => ({ ...acc, ...record }), {}),
+    records.reduce((acc, record) => ({ ...acc, ...record }), {})
   );
 
   return files;
@@ -413,7 +427,7 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
               contentType:
                 stats.type === "file" ? getContentType(entry) : undefined,
             };
-          }),
+          })
       );
 
       return filesList;
@@ -422,8 +436,66 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
       throw new Error(
         `Failed to list directory: ${
           err instanceof Error ? err.message : "Unknown error"
-        }`,
+        }`
       );
+    }
+  },
+  cat: async (options: CatSchema): Promise<FileContent | null> => {
+    const state = get();
+    const { repoId, repoUrl } = state;
+
+    if (!repoId || !repoUrl) {
+      throw new Error("Repository information not provided");
+    }
+
+    await ensureRepoCloned({ repoId, repoUrl });
+    const repoDir = `/${repoId}`;
+    const filePath = options.path;
+
+    try {
+      // Get file stats to check if it exists and get size
+      const stats = await fs.promises.stat(path.join(repoDir, filePath));
+      if (stats.type !== "file") {
+        throw new Error(`Path is not a file: ${filePath}`);
+      }
+
+      // Get the file content
+      const content = await fs.promises.readFile(
+        path.join(repoDir, filePath),
+        "utf8"
+      );
+
+      // Get the latest commit info for this file
+      const commits = await git.log({
+        fs,
+        dir: repoDir,
+        filepath: filePath,
+        depth: 1,
+      });
+
+      const latestCommit = commits[0] || {
+        oid: "unknown",
+        commit: {
+          message: "No commit history found",
+          author: { timestamp: Date.now() / 1000 },
+        },
+      };
+
+      return {
+        content,
+        encoding: "utf-8",
+        contentType: getContentType(filePath),
+        size: stats.size,
+        path: filePath,
+        commit: {
+          oid: latestCommit.oid,
+          message: latestCommit.commit.message,
+          date: latestCommit.commit.author.timestamp * 1000,
+        },
+      };
+    } catch (err) {
+      console.error(`Error reading file ${filePath}:`, err);
+      return null;
     }
   },
 
@@ -663,7 +735,7 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
             console.error(`Error deleting file for patch: ${p}`, err);
             throw err;
           }
-        },
+        }
       );
 
       // After patch is applied successfully, commit the changes
@@ -688,19 +760,23 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
 
         if (addedFiles.length > 0) {
           parts.push(
-            `Added ${addedFiles.length} file${addedFiles.length > 1 ? "s" : ""}`,
+            `Added ${addedFiles.length} file${addedFiles.length > 1 ? "s" : ""}`
           );
         }
 
         if (updatedFiles.length > 0) {
           parts.push(
-            `Updated ${updatedFiles.length} file${updatedFiles.length > 1 ? "s" : ""}`,
+            `Updated ${updatedFiles.length} file${
+              updatedFiles.length > 1 ? "s" : ""
+            }`
           );
         }
 
         if (deletedFiles.length > 0) {
           parts.push(
-            `Deleted ${deletedFiles.length} file${deletedFiles.length > 1 ? "s" : ""}`,
+            `Deleted ${deletedFiles.length} file${
+              deletedFiles.length > 1 ? "s" : ""
+            }`
           );
         }
 
@@ -869,7 +945,7 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
             const repoDir = `/${repoId}`;
             const content = await fs.promises.readFile(
               `${repoDir}/${fullPath}`,
-              "utf8",
+              "utf8"
             );
 
             return {
@@ -906,6 +982,141 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
     } catch (err) {
       console.error("Error loading file content:", err);
       return null;
+    }
+  },
+
+  grep: async (options: GrepSchema) => {
+    const state = get();
+    const { repoId, repoUrl } = state;
+
+    if (!repoId || !repoUrl) {
+      throw new Error("Repository information not provided");
+    }
+
+    await ensureRepoCloned({ repoId, repoUrl });
+    const repoDir = `/${repoId}`;
+
+    const searchPath = options.path
+      ? path.join(repoDir, options.path)
+      : repoDir;
+    const pattern = options.pattern;
+    const recursive = options.recursive !== false; // Default to true
+    const caseSensitive = options.caseSensitive || false;
+    const filePattern = options.filePattern || "*";
+    const maxResults = options.maxResults || Number.MAX_SAFE_INTEGER;
+
+    try {
+      // Get all files in the directory (recursively if specified)
+      const getFilesRecursively = async (
+        dir: string,
+        basePath: string = ""
+      ): Promise<string[]> => {
+        const entries = await fs.promises.readdir(dir);
+        const files = await Promise.all(
+          entries
+            .filter((entry) => entry !== ".git")
+            .map(async (entry) => {
+              const fullPath = path.join(dir, entry);
+              const relativePath = path.join(basePath, entry);
+              const stats = await fs.promises.stat(fullPath);
+
+              if (stats.type === "dir") {
+                return recursive
+                  ? getFilesRecursively(fullPath, relativePath)
+                  : [];
+              } else {
+                // Check if the file matches the file pattern
+                if (filePattern === "*" || matchesPattern(entry, filePattern)) {
+                  return [relativePath];
+                }
+                return [];
+              }
+            })
+        );
+
+        return files.flat();
+      };
+
+      // Helper to check if filename matches pattern like "*.js" or "*.{ts,tsx}"
+      const matchesPattern = (filename: string, pattern: string): boolean => {
+        if (pattern === "*") return true;
+
+        if (pattern.includes("{") && pattern.includes("}")) {
+          // Handle patterns like "*.{js,ts,tsx}"
+          const prefix = pattern.split("{")[0].replace("*", ".*");
+          const exts = pattern.split("{")[1].split("}")[0].split(",");
+          const regex = new RegExp(
+            `${prefix}(${exts.join("|")})$`,
+            caseSensitive ? "" : "i"
+          );
+          return regex.test(filename);
+        } else {
+          // Handle simple patterns like "*.js"
+          const regex = new RegExp(
+            pattern.replace(/\./g, "\\.").replace(/\*/g, ".*"),
+            caseSensitive ? "" : "i"
+          );
+          return regex.test(filename);
+        }
+      };
+
+      // Get all matching files
+      const basePathForDisplay = options.path || "";
+      const allFiles = await getFilesRecursively(searchPath);
+
+      // Search through files for pattern
+      const results: GrepMatch[] = [];
+      const searchRegExp = new RegExp(pattern, caseSensitive ? "g" : "gi");
+
+      for (const filePath of allFiles) {
+        if (results.length >= maxResults) break;
+
+        try {
+          const fullPath = path.join(repoDir, filePath);
+          const content = await fs.promises.readFile(fullPath, "utf8");
+          const lines = content.split("\n");
+
+          for (let i = 0; i < lines.length; i++) {
+            if (results.length >= maxResults) break;
+
+            const line = lines[i];
+            const matches: { start: number; end: number }[] = [];
+            let match;
+
+            // Create a new RegExp instance for each search to avoid state issues
+            const lineRegExp = new RegExp(pattern, caseSensitive ? "g" : "gi");
+
+            // Find all matches in the line
+            while ((match = lineRegExp.exec(line)) !== null) {
+              matches.push({
+                start: match.index,
+                end: match.index + match[0].length,
+              });
+            }
+
+            if (matches.length > 0 || searchRegExp.test(line)) {
+              results.push({
+                file: path.join(basePathForDisplay, filePath),
+                line: i + 1, // 1-based line numbers
+                content: line,
+                matches: matches.length > 0 ? matches : undefined,
+              });
+            }
+          }
+        } catch (error) {
+          console.error(`Error reading file ${filePath}:`, error);
+          // Continue with other files
+        }
+      }
+
+      return results;
+    } catch (err) {
+      console.error(`Error searching in ${searchPath}:`, err);
+      throw new Error(
+        `Failed to search for pattern: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
+      );
     }
   },
 }));
