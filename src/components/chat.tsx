@@ -254,7 +254,9 @@ export default function Chat(props: {
         let res;
         try {
           // Use the cat method directly from the filesystem store
-          const fileContent = await filesystemStore.cat(tool.toolCall.args as CatSchema);
+          const fileContent = await filesystemStore.cat(
+            tool.toolCall.args as CatSchema,
+          );
           // For chat display, we only need the content as a string
           res =
             fileContent && typeof fileContent.content === "string"
@@ -266,7 +268,7 @@ export default function Chat(props: {
           };
         }
 
-        await addToolResult({
+        addToolResult({
           toolCallId: tool.toolCall.toolCallId,
           result: res,
         });
@@ -291,7 +293,7 @@ export default function Chat(props: {
           };
         }
 
-        await addToolResult({
+        addToolResult({
           toolCallId: tool.toolCall.toolCallId,
           result: res,
         });
@@ -308,7 +310,7 @@ export default function Chat(props: {
   // Handle patch approval decision
   const handlePatchDecision = async (
     decision: ReviewDecision,
-    message?: string
+    message?: string,
   ) => {
     if (!pendingToolCall) return;
 
@@ -405,7 +407,7 @@ export default function Chat(props: {
                 <div
                   className={cn(
                     "flex flex-row items-center gap-2",
-                    message.role === "user" ? "justify-end" : "justify-start"
+                    message.role === "user" ? "justify-end" : "justify-start",
                   )}
                 >
                   {message.role === "user" ? null : (
@@ -435,7 +437,7 @@ export default function Chat(props: {
                         <motion.p
                           className={cn(
                             "text-xs font-medium text-gray-500",
-                            index === messages.length - 1 ? "" : "mb-2"
+                            index === messages.length - 1 ? "" : "mb-2",
                           )}
                           layout="position"
                           layoutId={`name-${message.id}`}
@@ -459,13 +461,13 @@ export default function Chat(props: {
                     "flex flex-col gap-1 pt-2 ",
                     message.role === "user"
                       ? ""
-                      : "rounded-tr-lg rounded-bl-lg rounded-br-lg bg-muted border border-border z-10 mb-4"
+                      : "rounded-tr-lg rounded-bl-lg rounded-br-lg bg-muted border border-border z-10 mb-4",
                   )}
                 >
                   <div
                     className={cn(
                       "prose-container",
-                      message.role === "user" ? "ml-auto " : "mr-auto px-2.5"
+                      message.role === "user" ? "ml-auto " : "mr-auto px-2.5",
                     )}
                   >
                     {Array.isArray(message.parts) ? (

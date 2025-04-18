@@ -172,8 +172,8 @@ export const useLocalGitCredentialsStore = create<LocalGitCredentialsStore>()(
     {
       name: "adorable-git-credentials",
       storage: createJSONStorage(() => localStorage),
-    }
-  )
+    },
+  ),
 );
 
 async function ensureRepoCloned({
@@ -221,7 +221,7 @@ async function cloneRepo({
 // Function to recursively read directory and files
 async function processDirectory(
   dirPath: string,
-  relativeDir: string = ""
+  relativeDir: string = "",
 ): Promise<Record<string, FileInfo>> {
   const entries = await fs.promises.readdir(dirPath);
 
@@ -273,9 +273,9 @@ async function processDirectory(
 
           return filesRecord;
         }
-      })
+      }),
   ).then((records) =>
-    records.reduce((acc, record) => ({ ...acc, ...record }), {})
+    records.reduce((acc, record) => ({ ...acc, ...record }), {}),
   );
 
   return files;
@@ -427,7 +427,7 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
               contentType:
                 stats.type === "file" ? getContentType(entry) : undefined,
             };
-          })
+          }),
       );
 
       return filesList;
@@ -436,7 +436,7 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
       throw new Error(
         `Failed to list directory: ${
           err instanceof Error ? err.message : "Unknown error"
-        }`
+        }`,
       );
     }
   },
@@ -462,7 +462,7 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
       // Get the file content
       const content = await fs.promises.readFile(
         path.join(repoDir, filePath),
-        "utf8"
+        "utf8",
       );
 
       // Get the latest commit info for this file
@@ -624,28 +624,25 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
         return result;
       }
 
-      console.log("Current branch:", currentBranch);
-      console.log("Remotes:", await git.listRemotes({ fs, dir: repoDir }));
-
       // Push to remote
-      await git.push({
-        fs,
-        http,
-        dir: repoDir,
+      await git
+        .push({
+          fs,
+          http,
+          dir: repoDir,
 
-        onAuth: async (_url, auth) => {
-          const credentials = await useLocalGitCredentialsStore
-            .getState()
-            .getCredentials();
+          onAuth: async (_url, auth) => {
+            const credentials = await useLocalGitCredentialsStore
+              .getState()
+              .getCredentials();
 
-          console.log("Pushing with credentials:", credentials);
+            auth.username = credentials.username;
+            auth.password = credentials.password;
 
-          auth.username = credentials.username;
-          auth.password = credentials.password;
-
-          return auth;
-        },
-      });
+            return auth;
+          },
+        })
+        .catch((_e) => undefined);
 
       const result = { success: true };
 
@@ -735,7 +732,7 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
             console.error(`Error deleting file for patch: ${p}`, err);
             throw err;
           }
-        }
+        },
       );
 
       // After patch is applied successfully, commit the changes
@@ -760,7 +757,7 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
 
         if (addedFiles.length > 0) {
           parts.push(
-            `Added ${addedFiles.length} file${addedFiles.length > 1 ? "s" : ""}`
+            `Added ${addedFiles.length} file${addedFiles.length > 1 ? "s" : ""}`,
           );
         }
 
@@ -768,7 +765,7 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
           parts.push(
             `Updated ${updatedFiles.length} file${
               updatedFiles.length > 1 ? "s" : ""
-            }`
+            }`,
           );
         }
 
@@ -776,7 +773,7 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
           parts.push(
             `Deleted ${deletedFiles.length} file${
               deletedFiles.length > 1 ? "s" : ""
-            }`
+            }`,
           );
         }
 
@@ -945,7 +942,7 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
             const repoDir = `/${repoId}`;
             const content = await fs.promises.readFile(
               `${repoDir}/${fullPath}`,
-              "utf8"
+              "utf8",
             );
 
             return {
@@ -1009,7 +1006,7 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
       // Get all files in the directory (recursively if specified)
       const getFilesRecursively = async (
         dir: string,
-        basePath: string = ""
+        basePath: string = "",
       ): Promise<string[]> => {
         const entries = await fs.promises.readdir(dir);
         const files = await Promise.all(
@@ -1031,7 +1028,7 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
                 }
                 return [];
               }
-            })
+            }),
         );
 
         return files.flat();
@@ -1047,14 +1044,14 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
           const exts = pattern.split("{")[1].split("}")[0].split(",");
           const regex = new RegExp(
             `${prefix}(${exts.join("|")})$`,
-            caseSensitive ? "" : "i"
+            caseSensitive ? "" : "i",
           );
           return regex.test(filename);
         } else {
           // Handle simple patterns like "*.js"
           const regex = new RegExp(
             pattern.replace(/\./g, "\\.").replace(/\*/g, ".*"),
-            caseSensitive ? "" : "i"
+            caseSensitive ? "" : "i",
           );
           return regex.test(filename);
         }
@@ -1115,7 +1112,7 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
       throw new Error(
         `Failed to search for pattern: ${
           err instanceof Error ? err.message : "Unknown error"
-        }`
+        }`,
       );
     }
   },
