@@ -13,6 +13,8 @@ import { Message } from "ai";
 import { useFilesystemStore } from "@/lib/filesystem-store";
 import { LsSchema } from "@/lib/tools";
 import { ToolRenderer } from "./ToolRenderer";
+import { ToolResult } from "./tool-results";
+import { LsRenderer } from "./tools/ls";
 
 export default function Chat(props: {
   appId: string;
@@ -167,15 +169,56 @@ export default function Chat(props: {
                           part.type &&
                           part.type === "tool-invocation"
                         ) {
+                          // For LS tool, use specialized renderer
+                          if (part.toolInvocation.toolName === "ls") {
+                            return (
+                              <LsRenderer
+                                key={index}
+                                className="mb-2"
+                                toolInvocation={part.toolInvocation}
+                              />
+                            );
+                          }
+                          
+                          // For all other tools, use generic renderer
                           return (
                             <ToolRenderer
                               key={index}
-                              toolInvocation={part.toolInvocation}
+                              className="mb-2"
+                              toolInvocation={{
+                                name: part.toolInvocation.toolName,
+                                args: part.toolInvocation.args
+                              }}
                             />
                           );
                         }
                         return null;
                       })
+                    ) : message.role === "tool" ? (
+                      message.toolCallId && message.name === "ls" ? (
+                        <div className="mt-2">
+                          <LsRenderer
+                            toolInvocation={{
+                              toolCallId: message.toolCallId,
+                              toolName: "ls",
+                              args: {},
+                              state: "result",
+                              result: message.content ? JSON.parse(message.content) : null
+                            }}
+                          />
+                        </div>
+                      ) : message.toolCallId ? (
+                        <ToolResult
+                          toolName={message.name || "unknown"}
+                          result={message.content ? JSON.parse(message.content) : null}
+                        />
+                      ) : (
+                        <p className="text-gray-500">Tool result without ID</p>
+                      )
+                    ) : message.content ? (
+                      <Markdown className="prose prose-sm dark:prose-invert max-w-none">
+                        {message.content}
+                      </Markdown>
                     ) : (
                       <p className="text-gray-500">No content</p>
                     )}
