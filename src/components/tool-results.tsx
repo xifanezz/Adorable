@@ -94,9 +94,11 @@ export function LsToolResult({ result }: { result: any }) {
 }
 
 export function ToolResult({ toolName, result }: { toolName: string; result: any }) {
+  // Dynamic import for the LS tool to ensure we use our specialized component
   // Based on the tool name, render the appropriate component
   switch (toolName) {
     case "ls":
+      // Use our LsToolResult directly for tool results (not tool invocations)
       return <LsToolResult result={result} />;
     default:
       // Fallback for other tools or unknown tools
