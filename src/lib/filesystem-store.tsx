@@ -686,7 +686,7 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
 
     try {
       // First, apply the patch
-      const result = await process_patch(
+      const processResult = await process_patch(
         patchText,
         // Read function
         async (p) => {
@@ -733,7 +733,25 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
             throw err;
           }
         },
-      );
+      )
+        .then((res) => {
+          return {
+            data: res,
+            error: undefined,
+          };
+        })
+        .catch((e) => {
+          return {
+            error: e,
+            data: undefined,
+          };
+        });
+
+      if (processResult.error) {
+        return `Error applying patch: ${processResult.error}`;
+      }
+
+      const result = processResult.data as string;
 
       // After patch is applied successfully, commit the changes
       const patchLines = patchText.split("\n");
@@ -1008,7 +1026,7 @@ export const useFilesystemStore = create<FilesystemState>((set, get) => ({
         dir: string,
         basePath: string = "",
       ): Promise<string[]> => {
-        const entries = await fs.promises.readdir(dir);
+        const entries = await fs.promises.readdir(dir).catch(() => []);
         const files = await Promise.all(
           entries
             .filter((entry) => entry !== ".git")

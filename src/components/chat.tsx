@@ -325,7 +325,11 @@ export default function Chat(props: {
       ) {
         // Apply the patch
         const { patch } = pendingToolCall.toolCall.args as ApplyPatchSchema;
-        result = await filesystemStore.applyPatch(patch);
+        result = await filesystemStore
+          .applyPatch(patch)
+          .catch(
+            (e) => `Error while applying patch: ${e.message || String(e)}`,
+          );
       } else {
         // Rejected
         result = `Changes rejected by user${message ? `: ${message}` : "."}`;
