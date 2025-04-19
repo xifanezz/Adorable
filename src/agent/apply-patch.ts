@@ -399,7 +399,7 @@ function peek_next_section(
     if (mode === "delete") {
       delLines.push(line);
       old.push(line);
-    } else if (mode === "add") {
+    } else if (mode === "add" && line.length > 0) {
       insLines.push(line);
     } else {
       old.push(line);
@@ -652,4 +652,3 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     }
   });
 }
-
