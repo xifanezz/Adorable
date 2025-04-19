@@ -120,6 +120,10 @@ export default function Home() {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-4 relative">
+      {/* Background dot pattern */}
+      <div className="absolute inset-0 w-full h-full overflow-hidden">
+        <div className="absolute inset-0 w-full h-full dot-pattern opacity-20"></div>
+      </div>
       <div className="flex flex-[1]" />
       <div className="w-full max-w-lg px-4 sm:px-0 mx-auto flex flex-col items-center">
         {/* Logo */}

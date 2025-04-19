@@ -270,3 +270,14 @@ body {
 .prose-container hr {
   @apply my-8 border-gray-300 dark:border-gray-700;
 }
+
+body {
+  margin: 0;
+  height: 100vh;
+}
+
+/* Dot pattern */
+.dot-pattern {
+  background-image: radial-gradient(circle, #000 1px, transparent 1px);
+  background-size: 30px 30px;
+}

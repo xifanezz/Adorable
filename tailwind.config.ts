@@ -18,6 +18,12 @@ const config = {
       },
     },
     extend: {
+      backgroundImage: {
+        'grid-pattern': 'radial-gradient(circle, #000 1px, transparent 1px)',
+      },
+      backgroundSize: {
+        'dot-grid': '40px 40px',
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
