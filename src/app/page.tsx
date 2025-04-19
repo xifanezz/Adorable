@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/prompt-input";
 import Image from "next/image";
 import LogoSvg from "@/logo.svg";
-import { useEffect, useState as useReactState } from "react";
+import { useEffect, useState as useReactState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowUp, Square } from "lucide-react";
 // const RAINBOW_COLORS = [
@@ -30,15 +30,80 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [isMounted, setIsMounted] = useReactState(false);
   const router = useRouter();
-  const [glowColors, setGlowColors] = useState(BASE_COLORS);
-  const [glowMode, setGlowMode] = useState<
-    "colorShift" | "rotate" | "pulse" | "breathe" | "flowHorizontal"
-  >("colorShift");
+
+  // For the typing animation
+  const placeholderRef = useRef<HTMLTextAreaElement>(null);
+  const [placeholderText, setPlaceholderText] = useState("");
+  const fullPlaceholder = "I want to build";
+  const exampleIdeas = [
+    "a dog food marketplace",
+    "a personal portfolio website for my mother's bakery",
+    "a B2B SaaS for burrito shops to sell burritos",
+    "a social network for coders to find grass to touch",
+    "a potato farm.🇮🇪 🇮🇪 🇮🇪            ",
+  ];
 
   // Ensure hydration is complete before showing the glow effect
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Typing animation effect
+  useEffect(() => {
+    if (!isMounted) return;
+
+    let currentTextIndex = 0;
+    let currentCharIndex = 0;
+    let typingTimer: NodeJS.Timeout;
+    let pauseTimer: NodeJS.Timeout;
+
+    const typeNextCharacter = () => {
+      {
+        // Start typing the current example idea
+        const currentIdea = exampleIdeas[currentTextIndex];
+        if (currentCharIndex < currentIdea.length) {
+          setPlaceholderText(
+            fullPlaceholder +
+              " " +
+              currentIdea.substring(0, currentCharIndex + 1)
+          );
+          currentCharIndex++;
+          typingTimer = setTimeout(typeNextCharacter, 100);
+        } else {
+          // Pause at the end of typing the example
+          pauseTimer = setTimeout(() => {
+            // Begin erasing the example
+            eraseText();
+          }, 2000);
+        }
+      }
+    };
+
+    const eraseText = () => {
+      const currentIdea = exampleIdeas[currentTextIndex];
+      if (currentCharIndex > 0) {
+        setPlaceholderText(
+          fullPlaceholder + " " + currentIdea.substring(0, currentCharIndex - 1)
+        );
+        currentCharIndex--;
+        typingTimer = setTimeout(eraseText, 50);
+      } else {
+        // Move to the next example
+        currentTextIndex = (currentTextIndex + 1) % exampleIdeas.length;
+        pauseTimer = setTimeout(() => {
+          typingTimer = setTimeout(typeNextCharacter, 100);
+        }, 500);
+      }
+    };
+
+    // Start the typing animation
+    typingTimer = setTimeout(typeNextCharacter, 500);
+
+    return () => {
+      clearTimeout(typingTimer);
+      clearTimeout(pauseTimer);
+    };
+  }, [isMounted]);
 
   const handleSubmit = async () => {
     if (!prompt.trim()) return;
@@ -86,15 +151,13 @@ export default function Home() {
                 className="relative z-10 border-none bg-transparent shadow-none focus-within:border-gray-400 focus-within:ring-1 focus-within:ring-gray-200 transition-all duration-200 ease-in-out "
               >
                 <PromptInputTextarea
-                  placeholder="Describe the app you want to build..."
+                  ref={placeholderRef}
+                  placeholder={placeholderText ?? fullPlaceholder}
                   className="min-h-[100px] w-full bg-transparent backdrop-blur-sm pr-12 "
                   onFocus={() => {
                     // setGlowColors(RAINBOW_COLORS);
                   }}
-                  onBlur={() => {
-                    setGlowColors(BASE_COLORS);
-                    setGlowMode("colorShift");
-                  }}
+                  onBlur={() => {}}
                 />
                 <PromptInputActions className="justify-end">
                   {/* No visible content here */}
