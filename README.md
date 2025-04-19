@@ -50,6 +50,8 @@ Open-source version of [Lovable](https://lovable.dev) - an AI agent that can wri
 
    # Freestyle API
    FREESTYLE_API_KEY=your_freestyle_api_key
+    
+   GIT_ROOT=https://git.freestyle.sh
    ```
 
 5. Initialize the database:
