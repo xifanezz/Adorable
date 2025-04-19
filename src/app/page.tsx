@@ -12,6 +12,7 @@ import Image from "next/image";
 import LogoSvg from "@/logo.svg";
 import { useEffect, useState as useReactState, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { ExampleButton } from "@/components/ExampleButton";
 import { ArrowUp, Square } from "lucide-react";
 // const RAINBOW_COLORS = [
 //   "#7303c0",
@@ -157,7 +158,7 @@ export default function Home() {
                 <PromptInputTextarea
                   ref={placeholderRef}
                   placeholder={placeholderText ?? fullPlaceholder}
-                  className="min-h-[100px] w-full bg-transparent backdrop-blur-sm pr-12 "
+                  className="min-h-[100px] w-full bg-transparent backdrop-blur-sm pr-12"
                   onFocus={() => {
                     // setGlowColors(RAINBOW_COLORS);
                   }}
@@ -192,36 +193,21 @@ export default function Home() {
         <div className="mt-6">
           <p className="text-center text-xs text-gray-500 mb-2">Examples</p>
           <div className="flex flex-wrap justify-center gap-2">
-            <button
-              onClick={() =>
-                setPrompt(
-                  "Build a dog food marketplace where users can browse and purchase premium dog food."
-                )
-              }
-              className="px-3 py-1.5 text-sm border border-gray-300 rounded-full hover:bg-gray-50 transition-colors focus:outline-none"
-            >
-              Dog Food Marketplace
-            </button>
-            <button
-              onClick={() =>
-                setPrompt(
-                  "Create a personal website with portfolio, blog, and contact sections."
-                )
-              }
-              className="px-3 py-1.5 text-sm border border-gray-300 rounded-full hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300"
-            >
-              Personal Website
-            </button>
-            <button
-              onClick={() =>
-                setPrompt(
-                  "Build a B2B SaaS for burrito shops to manage inventory, orders, and delivery logistics."
-                )
-              }
-              className="px-3 py-1.5 text-sm border border-gray-300 rounded-full hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300"
-            >
-              Burrito B2B SaaS
-            </button>
+            <ExampleButton
+              text="Dog Food Marketplace"
+              promptText="Build a dog food marketplace where users can browse and purchase premium dog food."
+              onClick={setPrompt}
+            />
+            <ExampleButton
+              text="Personal Website"
+              promptText="Create a personal website with portfolio, blog, and contact sections."
+              onClick={setPrompt}
+            />
+            <ExampleButton
+              text="Burrito B2B SaaS"
+              promptText="Build a B2B SaaS for burrito shops to manage inventory, orders, and delivery logistics."
+              onClick={setPrompt}
+            />
           </div>
         </div>
       </div>
@@ -232,9 +218,15 @@ export default function Home() {
         href="https://style.dev"
         target="_blank"
         rel="noopener noreferrer"
-        className="fixed bottom-4 right-4 px-3 py-1.5 text-xs sm:text-sm font-medium border border-gray-300 rounded-full bg-white/80 backdrop-blur-sm hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 flex items-center gap-1 shadow-sm"
+        className="fixed bottom-4 right-4 text-xs sm:text-sm font-medium flex items-center gap-1"
       >
-        Built on Freestyle
+        <Button
+          variant="pill"
+          size="sm"
+          className="focus:ring-2 focus:ring-gray-300"
+        >
+          Built on Freestyle
+        </Button>
       </a>
     </main>
   );
