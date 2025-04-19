@@ -1,10 +1,174 @@
-"use server";
+"use client";
 
 import { createApp } from "@/actions/create-app";
-import { redirect } from "next/navigation";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  PromptInput,
+  PromptInputTextarea,
+  PromptInputActions,
+} from "@/components/ui/prompt-input";
+import Image from "next/image";
+import LogoSvg from "@/logo.svg";
+import { useEffect, useState as useReactState } from "react";
+import { Button } from "@/components/ui/button";
+import { ArrowUp, Square } from "lucide-react";
+// const RAINBOW_COLORS = [
+//   "#7303c0",
+//   "#ec38bc",
+//   "#fdeff9",
+//   "#f8ff00",
+//   "#3ad59f",
+//   "#ff4d00",
+//   "#ff4d00",
+//   "#ff4d00",
+// ];
 
-export default async function Home() {
-  const { id } = await createApp();
+const BASE_COLORS = ["#7F00FF", "#E100FF"];
+export default function Home() {
+  const [prompt, setPrompt] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isMounted, setIsMounted] = useReactState(false);
+  const router = useRouter();
+  const [glowColors, setGlowColors] = useState(BASE_COLORS);
+  const [glowMode, setGlowMode] = useState<
+    "colorShift" | "rotate" | "pulse" | "breathe" | "flowHorizontal"
+  >("colorShift");
 
-  redirect(`/app/${id}`);
+  // Ensure hydration is complete before showing the glow effect
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const handleSubmit = async () => {
+    if (!prompt.trim()) return;
+
+    setIsLoading(true);
+    try {
+      const app = await createApp();
+      router.push(`/app/${app.id}`);
+    } catch (error) {
+      console.error("Error creating app:", error);
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <main className="min-h-screen flex flex-col items-center justify-center p-4 relative">
+      <div className="flex flex-[1]" />
+      <div className="w-full max-w-lg px-4 sm:px-0 mx-auto flex flex-col items-center">
+        {/* Logo */}
+        <div className="w-32 h-32 mb-2">
+          <Image src={LogoSvg} alt="Adorable Logo" width={128} height={128} />
+        </div>
+
+        {/* Title */}
+        <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-center mb-4">
+          Adorable
+        </h1>
+
+        {/* Subtitle */}
+        <p className="text-lg sm:text-xl md:text-2xl text-gray-600 text-center mb-6">
+          Open Source AI App Builder
+        </p>
+
+        {/* Prompt Input */}
+        <div className="w-full relative my-5">
+          {/* Adaptable width container */}
+          <div className="relative w-full max-w-full overflow-hidden">
+            {/* Custom input wrapper with adaptive width */}
+            <div className="w-full bg-white/90 rounded-md relative z-10 border transition-colors">
+              <PromptInput
+                isLoading={isLoading}
+                value={prompt}
+                onValueChange={setPrompt}
+                onSubmit={handleSubmit}
+                className="relative z-10 border-none bg-transparent shadow-none focus-within:border-gray-400 focus-within:ring-1 focus-within:ring-gray-200 transition-all duration-200 ease-in-out "
+              >
+                <PromptInputTextarea
+                  placeholder="Describe the app you want to build..."
+                  className="min-h-[100px] w-full bg-transparent backdrop-blur-sm pr-12 "
+                  onFocus={() => {
+                    // setGlowColors(RAINBOW_COLORS);
+                  }}
+                  onBlur={() => {
+                    setGlowColors(BASE_COLORS);
+                    setGlowMode("colorShift");
+                  }}
+                />
+                <PromptInputActions className="justify-end">
+                  {/* No visible content here */}
+                </PromptInputActions>
+              </PromptInput>
+
+              {/* Absolutely positioned submit button */}
+              <div className="absolute right-3 bottom-3 z-20">
+                <Button
+                  variant={isLoading ? "destructive" : "default"}
+                  size="icon"
+                  className="h-8 w-8 rounded-full shadow-md"
+                  onClick={handleSubmit}
+                  disabled={isLoading || !prompt.trim()}
+                >
+                  {isLoading ? (
+                    <Square className="h-4 w-4" />
+                  ) : (
+                    <ArrowUp className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Example pills - moved outside the div with glow */}
+        <div className="mt-6">
+          <p className="text-center text-xs text-gray-500 mb-2">Examples</p>
+          <div className="flex flex-wrap justify-center gap-2">
+            <button
+              onClick={() =>
+                setPrompt(
+                  "Build a dog food marketplace where users can browse and purchase premium dog food."
+                )
+              }
+              className="px-3 py-1.5 text-sm border border-gray-300 rounded-full hover:bg-gray-50 transition-colors focus:outline-none"
+            >
+              Dog Food Marketplace
+            </button>
+            <button
+              onClick={() =>
+                setPrompt(
+                  "Create a personal website with portfolio, blog, and contact sections."
+                )
+              }
+              className="px-3 py-1.5 text-sm border border-gray-300 rounded-full hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300"
+            >
+              Personal Website
+            </button>
+            <button
+              onClick={() =>
+                setPrompt(
+                  "Build a B2B SaaS for burrito shops to manage inventory, orders, and delivery logistics."
+                )
+              }
+              className="px-3 py-1.5 text-sm border border-gray-300 rounded-full hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300"
+            >
+              Burrito B2B SaaS
+            </button>
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-[3]" />
+
+      {/* Built on Freestyle pill */}
+      <a
+        href="https://style.dev"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-4 right-4 px-3 py-1.5 text-xs sm:text-sm font-medium border border-gray-300 rounded-full bg-white/80 backdrop-blur-sm hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 flex items-center gap-1 shadow-sm"
+      >
+        Built on Freestyle
+      </a>
+    </main>
+  );
 }
