@@ -1,6 +1,6 @@
 # Adorable
 
-Open-source version of [Lovable](https://lovable.ai) - an AI agent that can write and edit code through a chat interface.
+Open-source version of [Lovable](https://lovable.dev) - an AI agent that can write and edit code through a chat interface.
 
 ## Features
 
