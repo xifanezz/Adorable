@@ -3,7 +3,7 @@
 import { useChat } from "@ai-sdk/react";
 import { PromptInputBasic } from "./chatinput";
 import { Markdown } from "./ui/markdown";
-import { ChangeEvent, useEffect, useState } from "react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import LogoSvg from "@/logo.svg";
 import { cn } from "@/lib/utils";
@@ -172,7 +172,7 @@ export default function Chat(props: {
   const [showPatchDialog, setShowPatchDialog] = useState(false);
   const [currentPatch, setCurrentPatch] = useState("");
   const [pendingToolCall, setPendingToolCall] = useState<any>(null);
-
+  const hasResponded = useRef(false);
   // Get filesystem store state for git operations
   const filesystemStore = useFilesystemStore();
   const lastCommitInfo = filesystemStore.lastCommitInfo;
@@ -393,7 +393,12 @@ export default function Chat(props: {
 
   // Send initial message if provided and no messages are present
   useEffect(() => {
-    if (props.respond && messages.at(-1)?.role === "user") {
+    if (
+      props.respond &&
+      messages.at(-1)?.role === "user" &&
+      !hasResponded.current
+    ) {
+      hasResponded.current = true;
       console.log("Sending initial message");
       handleSubmit();
       reload();

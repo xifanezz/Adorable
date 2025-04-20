@@ -47,6 +47,7 @@ export async function createApp({
         message: {
           role: "user",
           id,
+          createdAt: new Date(),
           content: initialMessage,
           parts: [
             {
