@@ -111,8 +111,10 @@ export default function Home() {
 
     setIsLoading(true);
     try {
-      const app = await createApp();
-      router.push(`/app/${app.id}`);
+      const app = await createApp({
+        initialMessage: prompt,
+      });
+      router.push(`/app/${app.id}?respond`);
     } catch (error) {
       console.error("Error creating app:", error);
       setIsLoading(false);

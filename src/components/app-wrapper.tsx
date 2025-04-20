@@ -23,12 +23,14 @@ export default function AppWrapper({
   appName,
   repo,
   initialMessages,
+  respond,
   appId,
   repoId,
 }: {
   appName: string;
   repo: string;
   appId: string;
+  respond?: boolean;
   initialMessages: Message[];
   repoId: string;
 }) {
@@ -42,7 +44,11 @@ export default function AppWrapper({
         </TopBar>
         <div className="grid grid-cols-[1fr_2fr] overflow-hidden">
           <div className="border-r overflow-auto">
-            <Chat appId={appId} initialMessages={initialMessages} />
+            <Chat
+              appId={appId}
+              initialMessages={initialMessages}
+              respond={respond}
+            />
           </div>
           <div className="overflow-auto">
             <Preview activeView={activeView} repo={repo} />

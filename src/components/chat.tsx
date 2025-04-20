@@ -15,6 +15,7 @@ import { ApplyPatchSchema } from "@/lib/tools";
 import { ReviewDecision } from "@/agent";
 import { CatSchema, GrepSchema, LsSchema } from "@/lib/tools";
 import { ToolRenderer } from "./ToolRenderer";
+import { useRouter } from "next/navigation";
 
 interface PatchApprovalDialogProps {
   patch: string;
@@ -165,6 +166,7 @@ function GitStatusNotification({
 export default function Chat(props: {
   appId: string;
   initialMessages: Message[];
+  respond?: boolean;
 }) {
   const [enabled, setEnabled] = useState(true);
   const [showPatchDialog, setShowPatchDialog] = useState(false);
@@ -176,6 +178,7 @@ export default function Chat(props: {
   const lastCommitInfo = filesystemStore.lastCommitInfo;
   const lastPushInfo = filesystemStore.lastPushInfo;
 
+  const router = useRouter();
   const {
     messages,
     handleSubmit,
@@ -183,6 +186,7 @@ export default function Chat(props: {
     handleInputChange,
     status,
     addToolResult,
+    reload,
   } = useChat({
     initialMessages: props.initialMessages,
     generateId: () => {
@@ -255,7 +259,7 @@ export default function Chat(props: {
         try {
           // Use the cat method directly from the filesystem store
           const fileContent = await filesystemStore.cat(
-            tool.toolCall.args as CatSchema,
+            tool.toolCall.args as CatSchema
           );
           // For chat display, we only need the content as a string
           res =
@@ -310,7 +314,7 @@ export default function Chat(props: {
   // Handle patch approval decision
   const handlePatchDecision = async (
     decision: ReviewDecision,
-    message?: string,
+    message?: string
   ) => {
     if (!pendingToolCall) return;
 
@@ -328,7 +332,7 @@ export default function Chat(props: {
         result = await filesystemStore
           .applyPatch(patch)
           .catch(
-            (e) => `Error while applying patch: ${e.message || String(e)}`,
+            (e) => `Error while applying patch: ${e.message || String(e)}`
           );
       } else {
         // Rejected
@@ -381,8 +385,28 @@ export default function Chat(props: {
     if (e?.preventDefault) {
       e.preventDefault();
     }
+    console.log("EVT", e);
+    console.log(JSON.stringify(e), e?.target);
     handleSubmit(e);
   };
+  // Use a ref to track if we've already sent the initial message
+
+  // Send initial message if provided and no messages are present
+  useEffect(() => {
+    if (props.respond && messages.at(-1)?.role === "user") {
+      console.log("Sending initial message");
+      handleSubmit();
+      reload();
+      router.push(`/app/${props.appId}`, {});
+      // router.push(`/app/${props.appId}}`, {});
+    } else {
+      console.log(
+        "Not sending initial message",
+        messages.at(-1),
+        props.respond
+      );
+    }
+  });
 
   return (
     <div className="flex flex-col h-full">
@@ -411,7 +435,7 @@ export default function Chat(props: {
                 <div
                   className={cn(
                     "flex flex-row items-center gap-2",
-                    message.role === "user" ? "justify-end" : "justify-start",
+                    message.role === "user" ? "justify-end" : "justify-start"
                   )}
                 >
                   {message.role === "user" ? null : (
@@ -441,7 +465,7 @@ export default function Chat(props: {
                         <motion.p
                           className={cn(
                             "text-xs font-medium text-gray-500",
-                            index === messages.length - 1 ? "" : "mb-2",
+                            index === messages.length - 1 ? "" : "mb-2"
                           )}
                           layout="position"
                           layoutId={`name-${message.id}`}
@@ -465,13 +489,13 @@ export default function Chat(props: {
                     "flex flex-col gap-1 pt-2 ",
                     message.role === "user"
                       ? ""
-                      : "rounded-tr-lg rounded-bl-lg rounded-br-lg bg-muted border border-border z-10 mb-4",
+                      : "rounded-tr-lg rounded-bl-lg rounded-br-lg bg-muted border border-border z-10 mb-4"
                   )}
                 >
                   <div
                     className={cn(
                       "prose-container",
-                      message.role === "user" ? "ml-auto " : "mr-auto px-2.5",
+                      message.role === "user" ? "ml-auto " : "mr-auto px-2.5"
                     )}
                   >
                     {Array.isArray(message.parts) ? (
