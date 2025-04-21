@@ -24,7 +24,7 @@ export default async function AppPage({
       appName={app.info.name}
       initialMessages={app.messages}
       respond={respond != undefined}
-      repo={process.env.GIT_ROOT + app.info.gitRepo}
+      repo={process.env.GIT_ROOT + "/" + app.info.gitRepo}
       appId={app.info.id}
       repoId={app.info.gitRepo}
     />
