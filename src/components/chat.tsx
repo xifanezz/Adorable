@@ -11,69 +11,8 @@ import { motion, AnimatePresence } from "motion/react";
 import { ChatContainer } from "./ui/chat-container";
 import { Message } from "ai";
 import { useFilesystemStore } from "@/lib/filesystem-store";
-import { ApplyPatchSchema } from "@/lib/tools";
-import { ReviewDecision } from "@/agent";
-import { CatSchema, GrepSchema, LsSchema } from "@/lib/tools";
 import { ToolRenderer } from "./ToolRenderer";
 import { useRouter } from "next/navigation";
-
-interface PatchApprovalDialogProps {
-  patch: string;
-  onDecision: (decision: ReviewDecision, message?: string) => void;
-}
-
-// Simple approval dialog for patches
-function PatchApprovalDialog({ patch, onDecision }: PatchApprovalDialogProps) {
-  const [customMessage, setCustomMessage] = useState("");
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-900 rounded-lg p-6 max-w-3xl max-h-[80vh] overflow-y-auto">
-        <h2 className="text-xl font-semibold mb-4">Approve Code Changes?</h2>
-        <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded overflow-auto mb-4 max-h-[50vh]">
-          <pre className="whitespace-pre-wrap text-sm">{patch}</pre>
-        </div>
-        <div className="mb-4">
-          <input
-            type="text"
-            placeholder="Optional feedback message"
-            className="w-full p-2 border rounded dark:bg-gray-800 dark:border-gray-700"
-            value={customMessage}
-            onChange={(e) => setCustomMessage(e.target.value)}
-          />
-        </div>
-        <div className="flex justify-end gap-3">
-          <button
-            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-            onClick={() => onDecision(ReviewDecision.NO_EXIT, customMessage)}
-          >
-            Reject & Stop
-          </button>
-          <button
-            className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
-            onClick={() =>
-              onDecision(ReviewDecision.NO_CONTINUE, customMessage)
-            }
-          >
-            Reject & Continue
-          </button>
-          <button
-            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-            onClick={() => onDecision(ReviewDecision.YES, customMessage)}
-          >
-            Approve
-          </button>
-          <button
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            onClick={() => onDecision(ReviewDecision.ALWAYS, customMessage)}
-          >
-            Always Approve
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // Display commit and push notifications
 function GitStatusNotification({
@@ -168,10 +107,6 @@ export default function Chat(props: {
   initialMessages: Message[];
   respond?: boolean;
 }) {
-  const [enabled, setEnabled] = useState(true);
-  const [showPatchDialog, setShowPatchDialog] = useState(false);
-  const [currentPatch, setCurrentPatch] = useState("");
-  const [pendingToolCall, setPendingToolCall] = useState<any>(null);
   const hasResponded = useRef(false);
   // Get filesystem store state for git operations
   const filesystemStore = useFilesystemStore();
@@ -179,196 +114,18 @@ export default function Chat(props: {
   const lastPushInfo = filesystemStore.lastPushInfo;
 
   const router = useRouter();
-  const {
-    messages,
-    handleSubmit,
-    input,
-    handleInputChange,
-    status,
-    addToolResult,
-    reload,
-  } = useChat({
-    initialMessages: props.initialMessages,
-    generateId: () => {
-      return "cs-" + crypto.randomUUID();
-    },
-    sendExtraMessageFields: true,
-    onToolCall: async (tool) => {
-      console.log("Tool called", tool);
-
-      if (tool.toolCall.toolName === "ls") {
-        setEnabled(false);
-        try {
-          const res = await filesystemStore
-            .ls(tool.toolCall.args as LsSchema)
-            .catch((e) => {
-              console.error("Error calling ls tool", e);
-              return {
-                error: e.message || String(e),
-              };
-            });
-
-          addToolResult({
-            toolCallId: tool.toolCall.toolCallId,
-            result: res,
-          });
-
-          return res;
-        } finally {
-          setEnabled(true);
-        }
-      }
-
-      if (tool.toolCall.toolName === "applyPatch") {
-        setEnabled(false);
-        try {
-          const { patch } = tool.toolCall.args as ApplyPatchSchema;
-
-          // Save current patch and tool call for the approval dialog
-          setCurrentPatch(patch);
-          setPendingToolCall(tool);
-          setShowPatchDialog(true);
-
-          // The actual result will be handled when the user makes a decision
-          // Return a promise that will be resolved later
-          return new Promise((resolve) => {
-            // Store the resolve function in the pendingToolCall
-            setPendingToolCall({
-              ...tool,
-              resolve,
-            });
-          });
-        } catch (error) {
-          setEnabled(true);
-          console.error("Error with applyPatch", error);
-
-          const errorMessage =
-            error instanceof Error ? error.message : String(error);
-
-          addToolResult({
-            toolCallId: tool.toolCall.toolCallId,
-            result: `Error: ${errorMessage}`,
-          });
-
-          return `Error: ${errorMessage}`;
-        }
-      }
-      if (tool.toolCall.toolName === "cat") {
-        setEnabled(false);
-        let res;
-        try {
-          // Use the cat method directly from the filesystem store
-          const fileContent = await filesystemStore.cat(
-            tool.toolCall.args as CatSchema
-          );
-          // For chat display, we only need the content as a string
-          res =
-            fileContent && typeof fileContent.content === "string"
-              ? fileContent.content
-              : "File content not available";
-        } catch (e) {
-          res = {
-            error: e instanceof Error ? e.message : String(e),
-          };
-        }
-
-        addToolResult({
-          toolCallId: tool.toolCall.toolCallId,
-          result: res,
-        });
-
-        setEnabled(true);
-      }
-      if (tool.toolCall.toolName === "grep") {
-        setEnabled(false);
-        let res;
-        try {
-          // Call the grep method from filesystemStore
-          res = await filesystemStore
-            .grep(tool.toolCall.args as GrepSchema)
-            .catch((e) => {
-              return {
-                error: e instanceof Error ? e.message : String(e),
-              };
-            });
-        } catch (e) {
-          res = {
-            error: e instanceof Error ? e.message : String(e),
-          };
-        }
-
-        addToolResult({
-          toolCallId: tool.toolCall.toolCallId,
-          result: res,
-        });
-
-        setEnabled(true);
-      }
-    },
-    headers: {
-      "Adorable-App-Id": props.appId,
-    },
-    api: "/api/chat",
-  });
-
-  // Handle patch approval decision
-  const handlePatchDecision = async (
-    decision: ReviewDecision,
-    message?: string
-  ) => {
-    if (!pendingToolCall) return;
-
-    setShowPatchDialog(false);
-
-    try {
-      let result: string;
-
-      if (
-        decision === ReviewDecision.YES ||
-        decision === ReviewDecision.ALWAYS
-      ) {
-        // Apply the patch
-        const { patch } = pendingToolCall.toolCall.args as ApplyPatchSchema;
-        result = await filesystemStore
-          .applyPatch(patch)
-          .catch(
-            (e) => `Error while applying patch: ${e.message || String(e)}`
-          );
-      } else {
-        // Rejected
-        result = `Changes rejected by user${message ? `: ${message}` : "."}`;
-      }
-
-      // Return the result to the AI
-      addToolResult({
-        toolCallId: pendingToolCall.toolCall.toolCallId,
-        result,
-      });
-
-      // Resolve the pending promise
-      if (pendingToolCall.resolve) {
-        pendingToolCall.resolve(result);
-      }
-    } catch (error) {
-      console.error("Error handling patch decision", error);
-
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-
-      addToolResult({
-        toolCallId: pendingToolCall.toolCall.toolCallId,
-        result: `Error: ${errorMessage}`,
-      });
-
-      if (pendingToolCall.resolve) {
-        pendingToolCall.resolve(`Error: ${errorMessage}`);
-      }
-    } finally {
-      setPendingToolCall(null);
-      setCurrentPatch("");
-      setEnabled(true);
-    }
-  };
+  const { messages, handleSubmit, input, handleInputChange, status, reload } =
+    useChat({
+      initialMessages: props.initialMessages,
+      generateId: () => {
+        return "cs-" + crypto.randomUUID();
+      },
+      sendExtraMessageFields: true,
+      headers: {
+        "Adorable-App-Id": props.appId,
+      },
+      api: "/api/chat",
+    });
 
   // Create a wrapper for handleInputChange to match expected function signature
   const onValueChange = (value: string) => {
@@ -379,9 +136,6 @@ export default function Chat(props: {
 
   // Create a submission handler
   const onSubmit = (e?: Event) => {
-    if (!enabled) {
-      return;
-    }
     if (e?.preventDefault) {
       e.preventDefault();
     }
@@ -415,13 +169,6 @@ export default function Chat(props: {
 
   return (
     <div className="flex flex-col h-full">
-      {showPatchDialog && (
-        <PatchApprovalDialog
-          patch={currentPatch}
-          onDecision={handlePatchDecision}
-        />
-      )}
-
       <GitStatusNotification
         lastCommitInfo={lastCommitInfo}
         lastPushInfo={lastPushInfo}
@@ -552,7 +299,6 @@ export default function Chat(props: {
         <PromptInputBasic
           input={input || ""}
           onSubmit={onSubmit}
-          disabled={!enabled}
           onValueChange={onValueChange}
           isGenerating={status === "streaming" || status === "submitted"}
         />
