@@ -28,7 +28,7 @@ export async function POST(req: Request) {
 
   const result = streamText({
     tools: await ADORABLE_TOOLS({
-      mcpUrl: url + "/mcp-sse",
+      mcpUrl: url + "/mcp",
     }),
     maxSteps: 15,
 
