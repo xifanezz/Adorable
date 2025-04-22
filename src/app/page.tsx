@@ -14,18 +14,7 @@ import { useEffect, useState as useReactState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ExampleButton } from "@/components/ExampleButton";
 import { ArrowUp, Square } from "lucide-react";
-// const RAINBOW_COLORS = [
-//   "#7303c0",
-//   "#ec38bc",
-//   "#fdeff9",
-//   "#f8ff00",
-//   "#3ad59f",
-//   "#ff4d00",
-//   "#ff4d00",
-//   "#ff4d00",
-// ];
 
-const BASE_COLORS = ["#7F00FF", "#E100FF"];
 export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);

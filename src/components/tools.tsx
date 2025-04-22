@@ -27,7 +27,35 @@ export function ToolMessage({
   }
 
   // Fallback for other tools
-  return <ToolBlock name={toolInvocation.toolName} />;
+  return (
+    <ToolBlock name={toolInvocation.toolName.replace("_", " ")}>
+      <div className="text-sm text-gray-500">
+        {JSON.stringify(toolInvocation.args, null, 2)}
+      </div>
+      {toolInvocation.state === "result" && (
+        <div>
+          {toolInvocation.result.content.map((content, index) => (
+            <DefaultContentRenderer content={content} key={index} />
+          ))}
+        </div>
+      )}
+    </ToolBlock>
+  );
+}
+
+function DefaultContentRenderer(props: {
+  content: {
+    type: "text";
+    text: string;
+  };
+}) {
+  if (props.content.type === "text") {
+    return <div className="text-sm text-gray-500">{props.content.text}</div>;
+  }
+
+  return (
+    <div className="text-sm text-gray-500">{JSON.stringify(props.content)}</div>
+  );
 }
 
 function EditFileTool({ toolInvocation }: { toolInvocation: ToolInvocation }) {
@@ -36,7 +64,7 @@ function EditFileTool({ toolInvocation }: { toolInvocation: ToolInvocation }) {
       <div className="grid gap-2">
         {toolInvocation.args.edits.map(
           (edit: { newText: string; oldText: string }, index: number) => (
-            <div key={index}>
+            <div key={index} className="rounded overflow-hidden">
               <div className="bg-red-200 font-mono text-xs whitespace-pre-wrap pl-2">
                 {edit.oldText
                   .split("\n")
@@ -59,12 +87,16 @@ function EditFileTool({ toolInvocation }: { toolInvocation: ToolInvocation }) {
 
 function WriteFileTool({ toolInvocation }: { toolInvocation: ToolInvocation }) {
   return (
-    <ToolBlock name="write file" argsText={toolInvocation.args.path}>
-      <div>
+    <ToolBlock
+      name="write file"
+      argsText={toolInvocation.args.path}
+      toolInvocation={toolInvocation}
+    >
+      <div className="rounded overflow-hidden">
         <div className="bg-green-200 font-mono text-xs whitespace-pre-wrap pl-2">
           {toolInvocation.args.content
             .split("\n")
-            .map((line) => "+ " + line)
+            .map((line: string) => "+ " + line)
             .join("\n")}
         </div>
       </div>
@@ -73,6 +105,7 @@ function WriteFileTool({ toolInvocation }: { toolInvocation: ToolInvocation }) {
 }
 
 function ToolBlock(props: {
+  toolInvocation?: ToolInvocation;
   name: string;
   argsText?: string;
   children?: React.ReactNode;
@@ -80,7 +113,7 @@ function ToolBlock(props: {
   return (
     <div>
       <div className="flex py-1">
-        <div className="text-sm bg-gray-800 text-white px-2">
+        <div className="text-sm bg-gray-800 text-white px-2 rounded">
           <span className="font-bold">{props.name}</span>{" "}
           <span className="text-gray-200">{props.argsText}</span>
         </div>
