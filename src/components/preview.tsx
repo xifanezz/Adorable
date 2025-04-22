@@ -5,10 +5,10 @@ import WebView from "./webview";
 
 export default function Preview(props: { repo: string; activeView: string }) {
   return (
-    <div className="h-full pt-4 overflow-y-auto p-4 relative">
+    <div className="h-full overflow-y-auto relative">
       <div className="grid grid-cols-1 grid-rows-1 w-full h-full">
         <div
-          className="col-start-1 row-start-1"
+          className="col-start-1 row-start-1 px-4"
           style={{
             visibility: props.activeView === "files" ? "visible" : "hidden",
           }}
