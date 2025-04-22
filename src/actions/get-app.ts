@@ -1,6 +1,5 @@
 "use server";
 
-import { convertToUIMessages } from "@/components/convertToUI";
 import { appsTable, messagesTable } from "@/db/schema";
 import { db } from "@/lib/db";
 import { asc, eq } from "drizzle-orm";
