@@ -5,6 +5,7 @@ import { ANTHROPIC_MODEL } from "@/lib/model";
 import { SYSTEM_MESSAGE } from "@/lib/system";
 import { ADORABLE_TOOLS } from "@/lib/tools";
 import { getAppIdFromHeaders } from "@/lib/utils";
+import { AnthropicProviderOptions } from "@ai-sdk/anthropic";
 import { createIdGenerator, Message, streamText } from "ai";
 
 export async function POST(req: Request) {
@@ -20,7 +21,7 @@ export async function POST(req: Request) {
   }
 
   const { url } = await freestyle.requestDevServer({
-    repoUrl: process.env.GIT_ROOT + "/" + app.info.gitRepo,
+    repoUrl: "https://" + process.env.GIT_ROOT + "/" + app.info.gitRepo,
   });
 
   const { messages }: { id: string; messages: Array<Message> } =
@@ -30,12 +31,21 @@ export async function POST(req: Request) {
     tools: await ADORABLE_TOOLS({
       mcpUrl: url + "/mcp",
     }),
-    maxSteps: 15,
-
+    onChunk: (chunk) => {
+      if (chunk.chunk.type === "reasoning") {
+        console.log(chunk.chunk.textDelta)
+      }
+    },
+    providerOptions: {
+      anthropic: {
+        thinking: { type: 'enabled', budgetTokens: 12000 },
+      } satisfies AnthropicProviderOptions,
+    },
+    maxSteps: 20,
     experimental_generateMessageId: createIdGenerator({
       prefix: "server-",
     }),
-
+    toolCallStreaming: true,
     onFinish: async ({ response }) => {
       await saveResponseMessages({
         appId,
@@ -43,7 +53,6 @@ export async function POST(req: Request) {
         responseMessages: response.messages,
       });
     },
-
     model: ANTHROPIC_MODEL,
     system: SYSTEM_MESSAGE,
     messages,

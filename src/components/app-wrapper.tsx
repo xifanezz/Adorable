@@ -1,8 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { TopBar } from "./topbar";
-import PreviewControls from "./preview-controls";
 import Chat from "./chat";
 import Preview from "./preview";
 import { Message } from "ai";
@@ -43,7 +41,7 @@ export default function AppWrapper({
           <PreviewControls onModeChange={setActiveView} />
         </TopBar> */}
         <div className="grid grid-cols-[1fr_2fr] overflow-hidden">
-          <div className="border-r overflow-auto">
+          <div className="overflow-auto">
             <Chat
               appId={appId}
               initialMessages={initialMessages}

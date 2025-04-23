@@ -23,9 +23,20 @@ export async function createApp({
       throw new Error("Failed to create git repository");
     });
 
+  const gitId = await freestyle.createGitIdentity();
+  await freestyle.grantGitPermission({
+    identityId: gitId.id,
+    repoId: repo.repoId,
+    permission: "write"
+  });
+  const token = await freestyle.createGitAccessToken({
+    identityId: gitId.id,
+  });
+
+  const url = `https://${gitId.id}:${token.token}@${process.env.GIT_ROOT}/${repo.repoId}`;
   // start the dev server as soon as possible
-  freestyle.requestDevServer({
-    repoUrl: process.env.GIT_ROOT + "/" + repo.repoId,
+  await freestyle.requestDevServer({
+    repoUrl: url,
   });
 
   const appInsertion = await db
