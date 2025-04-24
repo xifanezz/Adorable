@@ -27,15 +27,12 @@ export async function POST(req: Request) {
   const { messages }: { id: string; messages: Array<Message> } =
     await req.json();
 
+  repairBrokenMessages(messages);
+
   const result = streamText({
     tools: await ADORABLE_TOOLS({
       mcpUrl: url + "/mcp",
     }),
-    onChunk: (chunk) => {
-      if (chunk.chunk.type === "reasoning") {
-        console.log(chunk.chunk.textDelta)
-      }
-    },
     providerOptions: {
       anthropic: {
         thinking: { type: 'enabled', budgetTokens: 12000 },
@@ -53,12 +50,33 @@ export async function POST(req: Request) {
         responseMessages: response.messages,
       });
     },
+    messages: messages,
     model: ANTHROPIC_MODEL,
     system: SYSTEM_MESSAGE,
-    messages,
   });
 
   result.consumeStream(); // keep going even if the client disconnects
 
   return result.toDataStreamResponse();
+}
+
+export function repairBrokenMessages(messages: Message[]) {
+  for (const message of messages) {
+    if (message.role !== "assistant" || !message.parts) continue;
+
+    for (const part of message.parts) {
+      if (part.type !== "tool-invocation") continue;
+      if (part.toolInvocation.state === "result" && part.toolInvocation.result) continue;
+
+      part.toolInvocation = {
+        ...part.toolInvocation,
+        state: "result",
+        result: {
+          content: [
+            { type: "text", text: "unknown error" },],
+          isError: true,
+        }
+      }
+    }
+  }
 }

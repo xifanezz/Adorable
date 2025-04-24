@@ -3,6 +3,7 @@
 import { getApp } from "@/actions/get-app";
 import AppWrapper from "../../../components/app-wrapper";
 import { redirect } from "next/navigation";
+import { repairBrokenMessages } from "@/app/api/chat/route";
 
 export default async function AppPage({
   params,
@@ -18,6 +19,8 @@ export default async function AppPage({
   if (!app) {
     redirect("/");
   }
+
+  repairBrokenMessages(app.messages);
 
   return (
     <AppWrapper

@@ -47,5 +47,20 @@ export async function saveResponseMessages({
     responseMessages,
   });
 
+  // Fix broken tool calls
+  for (const message of responseMessages) {
+    if (message.role === "tool") {
+      for (const content of message.content) {
+        if (!content.result) {
+          content.isError = true;
+          content.result = {
+            content: [{ type: "text", text: "unknown error" }],
+            isError: true,
+          }
+        }
+      }
+    }
+  }
+
   return await saveMessages({ appId, newMsgs });
 }

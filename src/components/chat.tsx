@@ -117,23 +117,16 @@ function MessageBody({ message }: { message: Message }) {
           }
 
           if (part.type === "tool-invocation") {
-            if (message.parts!.length - 1 == index) {
+            if (
+              message.parts!.length - 1 == index &&
+              part.toolInvocation.state !== "result"
+            ) {
               return (
                 <ToolMessage key={index} toolInvocation={part.toolInvocation} />
               );
             } else {
               return undefined;
             }
-          }
-
-          if (part.type === "reasoning") {
-            return (
-              <div key={index} className="mb-4">
-                <Markdown className="prose prose-sm dark:prose-invert max-w-none">
-                  {"#REASONING\n" + part.reasoning}
-                </Markdown>
-              </div>
-            );
           }
         })}
       </div>
