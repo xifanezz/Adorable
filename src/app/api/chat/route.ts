@@ -21,7 +21,8 @@ export async function POST(req: Request) {
   }
 
   const { url } = await freestyle.requestDevServer({
-    repoUrl: "https://" + process.env.GIT_ROOT + "/" + app.info.gitRepo,
+    // repoUrl: "https://" + process.env.GIT_ROOT + "/" + app.info.gitRepo,
+    repoId: app.info.gitRepo,
   });
 
   const { messages }: { id: string; messages: Array<Message> } =
