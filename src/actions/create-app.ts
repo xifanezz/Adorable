@@ -9,6 +9,7 @@ export async function createApp({
 }: {
   initialMessage?: string;
 }) {
+  console.time("create git repo");
   const repo = await freestyle
     .createGitRepository({
       name: "Unnamed App",
@@ -22,14 +23,14 @@ export async function createApp({
       console.error("Error creating git repository:", JSON.stringify(e));
       throw new Error("Failed to create git repository");
     });
+  console.timeEnd("create git repo");
 
-  // const gitId = await freestyle.createGitIdentity();
-
-  // const url = `https://${gitId.id}:${token.token}@${process.env.GIT_ROOT}/${repo.repoId}`;
-  // start the dev server as soon as possible
+  console.time("start dev server");
   await freestyle.requestDevServer({
     // repoUrl: url,
     repoId: repo.repoId,
+  }).then(() => {
+    console.timeEnd("start dev server");
   });
 
   const appInsertion = await db
@@ -41,6 +42,7 @@ export async function createApp({
 
   const app = appInsertion[0];
 
+  console.time("insert initial message");
   if (initialMessage) {
     const id = `init-${crypto.randomUUID()}`;
     await db
@@ -67,6 +69,7 @@ export async function createApp({
         throw new Error("Failed to insert initial message");
       });
   }
+  console.timeEnd("insert initial message");
 
   return app;
 }

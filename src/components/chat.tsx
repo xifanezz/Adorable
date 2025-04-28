@@ -13,6 +13,7 @@ export default function Chat(props: {
   appId: string;
   initialMessages: Message[];
   respond?: boolean;
+  isLoading?: boolean;
 }) {
   const hasResponded = useRef(false);
   const router = useRouter();
@@ -84,7 +85,9 @@ export default function Chat(props: {
           input={input || ""}
           onSubmit={onSubmit}
           onValueChange={onValueChange}
-          isGenerating={status === "streaming" || status === "submitted"}
+          isGenerating={
+            props.isLoading || status === "streaming" || status === "submitted"
+          }
         />
       </div>
     </div>
@@ -95,7 +98,7 @@ function MessageBody({ message }: { message: Message }) {
   if (message.role === "user") {
     return (
       <div className="flex justify-end py-1 mb-4">
-        <div className="bg-gray-200 rounded px-2 py-0 max-w-[80%] ml-auto">
+        <div className="bg-gray-200 rounded-xl px-4 py-1 max-w-[80%] ml-auto">
           {message.content}
         </div>
       </div>

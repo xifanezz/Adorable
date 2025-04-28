@@ -3,16 +3,14 @@
 import { freestyle } from "@/lib/freestyle";
 
 export async function requestDevServer({ repoId }: { repoId: string }) {
-  const { ephemeralUrl, devCommandRunning, installCommandRunning, mcpEphemeralUrl } =
+  const { ephemeralUrl, devCommandRunning, installCommandRunning } =
     await freestyle.requestDevServer({
       repoId: repoId,
     });
 
   return {
-    ephemeralUrl: ephemeralUrl,
+    ephemeralUrl,
     devCommandRunning,
     installCommandRunning,
-    mcpUrl: mcpEphemeralUrl,
   };
 }
-

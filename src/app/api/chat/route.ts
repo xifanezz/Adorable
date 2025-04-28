@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     return new Response("App not found", { status: 404 });
   }
 
-  const { url } = await freestyle.requestDevServer({
+  const { mcpEphemeralUrl } = await freestyle.requestDevServer({
     // repoUrl: "https://" + process.env.GIT_ROOT + "/" + app.info.gitRepo,
     repoId: app.info.gitRepo,
   });
@@ -32,12 +32,23 @@ export async function POST(req: Request) {
 
   const result = streamText({
     tools: await ADORABLE_TOOLS({
-      mcpUrl: url + "/mcp",
+      mcpUrl: mcpEphemeralUrl,
+    }).then(tools => {
+      delete tools["directory_tree"];
+      return tools;
     }),
     providerOptions: {
       anthropic: {
         thinking: { type: 'enabled', budgetTokens: 12000 },
       } satisfies AnthropicProviderOptions,
+    },
+    onStepFinish: async (step) => {
+      console.log({
+        stepType: step.stepType,
+        text: step.text,
+        toolCalls: step.toolCalls,
+        toolResults: step.toolResults,
+      });
     },
     maxSteps: 20,
     experimental_generateMessageId: createIdGenerator({

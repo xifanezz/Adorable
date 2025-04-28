@@ -98,16 +98,18 @@ export default function Home() {
   const handleSubmit = async () => {
     if (!prompt.trim()) return;
 
-    setIsLoading(true);
-    try {
-      const app = await createApp({
-        initialMessage: prompt,
-      });
-      router.push(`/app/${app.id}?respond`);
-    } catch (error) {
-      console.error("Error creating app:", error);
-      setIsLoading(false);
-    }
+    // setIsLoading(true);
+    // try {
+    //   const app = await createApp({
+    //     initialMessage: prompt,
+    //   });
+    //   router.push(`/app/${app.id}?respond`);
+    // } catch (error) {
+    //   console.error("Error creating app:", error);
+    //   setIsLoading(false);
+    // }
+
+    router.push("/app/new?message=" + encodeURIComponent(prompt));
   };
 
   return (
@@ -204,7 +206,6 @@ export default function Home() {
       </div>
       <div className="flex flex-[3]" />
 
-      {/* Built on Freestyle pill */}
       <a
         href="https://style.dev"
         target="_blank"
@@ -216,7 +217,7 @@ export default function Home() {
           size="sm"
           className="focus:ring-2 focus:ring-gray-300"
         >
-          Built on Freestyle
+          By Freestyle
         </Button>
       </a>
     </main>
