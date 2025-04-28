@@ -26,7 +26,7 @@ export async function createApp({
   console.timeEnd("create git repo");
 
   console.time("start dev server");
-  await freestyle.requestDevServer({
+  freestyle.requestDevServer({
     // repoUrl: url,
     repoId: repo.repoId,
   }).then(() => {

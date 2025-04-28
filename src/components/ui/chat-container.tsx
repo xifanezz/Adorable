@@ -225,7 +225,7 @@ function ChatContainer({
 
   return (
     <div
-      className={cn("flex flex-col overflow-y-auto p-3", className)}
+      className={cn("flex flex-col overflow-y-auto h-full p-3", className)}
       role="log"
       ref={chatContainerRef}
       {...props}

@@ -37,11 +37,11 @@ export async function POST(req: Request) {
       delete tools["directory_tree"];
       return tools;
     }),
-    providerOptions: {
-      anthropic: {
-        thinking: { type: 'enabled', budgetTokens: 12000 },
-      } satisfies AnthropicProviderOptions,
-    },
+    // providerOptions: {
+    //   anthropic: {
+    //     thinking: { type: 'enabled', budgetTokens: 12000 },
+    //   } satisfies AnthropicProviderOptions,
+    // },
     onStepFinish: async (step) => {
       console.log({
         stepType: step.stepType,
