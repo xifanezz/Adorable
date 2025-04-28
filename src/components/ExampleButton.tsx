@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Button } from './ui/button';
+import React from "react";
+import { Button } from "./ui/button";
 
 interface ExampleButtonProps {
   text: string;
@@ -10,12 +10,18 @@ interface ExampleButtonProps {
   className?: string;
 }
 
-export function ExampleButton({ text, promptText, onClick, className }: ExampleButtonProps) {
+export function ExampleButton({
+  text,
+  promptText,
+  onClick,
+  className,
+}: ExampleButtonProps) {
   return (
     <Button
-      variant="pill"
-      className={className}
+      variant="outline"
+      className={`hover:bg-gray-100 hover:border-gray-300 active:scale-95 transition-all duration-200 ${className || ''}`}
       onClick={() => onClick(promptText)}
+      type="button"
     >
       {text}
     </Button>

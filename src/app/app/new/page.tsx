@@ -7,7 +7,7 @@ export default async function AppPage({
   searchParams: Promise<{ [key: string]: string | string[] }>;
   params: Promise<{ id: string }>;
 }) {
-  const { message } = await searchParams;
+  const { message, framework = "next" } = await searchParams;
 
   return (
     <div className="h-screen grid grid-cols-1">
@@ -18,7 +18,7 @@ export default async function AppPage({
             appId={"new"}
             initialMessages={[
               {
-                content: decodeURIComponent(message as string),
+                content: `${decodeURIComponent(message as string)}\n\nFramework: ${framework}`,
                 role: "user",
                 id: "init-" + crypto.randomUUID(),
                 createdAt: new Date(),

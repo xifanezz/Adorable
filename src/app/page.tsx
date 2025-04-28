@@ -7,6 +7,7 @@ import {
   PromptInputTextarea,
   PromptInputActions,
 } from "@/components/ui/prompt-input";
+import { FrameworkSelector } from "@/components/framework-selector";
 import Image from "next/image";
 import LogoSvg from "@/logo.svg";
 import { useEffect, useState as useReactState, useRef } from "react";
@@ -16,7 +17,8 @@ import { ArrowUp, Square } from "lucide-react";
 
 export default function Home() {
   const [prompt, setPrompt] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [framework, setFramework] = useState("next");
+  const [isLoading, _setIsLoading] = useState(false);
   const [isMounted, setIsMounted] = useReactState(false);
   const router = useRouter();
 
@@ -108,15 +110,13 @@ export default function Home() {
     //   setIsLoading(false);
     // }
 
-    router.push("/app/new?message=" + encodeURIComponent(prompt));
+    router.push(
+      `/app/new?message=${encodeURIComponent(prompt)}&framework=${framework}`
+    );
   };
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-4 relative">
-      {/* Background dot pattern */}
-      <div className="absolute inset-0 w-full h-full overflow-hidden">
-        <div className="absolute inset-0 w-full h-full dot-pattern opacity-20"></div>
-      </div>
       <div className="flex flex-[1]" />
       <div className="w-full max-w-lg px-4 sm:px-0 mx-auto flex flex-col items-center">
         {/* Logo */}
@@ -140,6 +140,9 @@ export default function Home() {
           <div className="relative w-full max-w-full overflow-hidden">
             {/* Custom input wrapper with adaptive width */}
             <div className="w-full bg-white/90 rounded-md relative z-10 border transition-colors">
+              <div className="absolute left-2 bottom-2 z-20">
+                <FrameworkSelector value={framework} onChange={setFramework} />
+              </div>
               <PromptInput
                 isLoading={isLoading}
                 value={prompt}
@@ -156,8 +159,8 @@ export default function Home() {
                   }}
                   onBlur={() => {}}
                 />
-                <PromptInputActions className="justify-end">
-                  {/* No visible content here */}
+                <PromptInputActions>
+                  {/* Actions can go here if needed */}
                 </PromptInputActions>
               </PromptInput>
 
@@ -188,17 +191,26 @@ export default function Home() {
             <ExampleButton
               text="Dog Food Marketplace"
               promptText="Build a dog food marketplace where users can browse and purchase premium dog food."
-              onClick={setPrompt}
+              onClick={(text) => {
+                console.log("Example clicked:", text);
+                setPrompt(text);
+              }}
             />
             <ExampleButton
               text="Personal Website"
               promptText="Create a personal website with portfolio, blog, and contact sections."
-              onClick={setPrompt}
+              onClick={(text) => {
+                console.log("Example clicked:", text);
+                setPrompt(text);
+              }}
             />
             <ExampleButton
               text="Burrito B2B SaaS"
               promptText="Build a B2B SaaS for burrito shops to manage inventory, orders, and delivery logistics."
-              onClick={setPrompt}
+              onClick={(text) => {
+                console.log("Example clicked:", text);
+                setPrompt(text);
+              }}
             />
           </div>
         </div>
@@ -212,9 +224,9 @@ export default function Home() {
         className="fixed bottom-4 right-4 text-xs sm:text-sm font-medium flex items-center gap-1"
       >
         <Button
-          variant="pill"
+          variant="outline"
           size="sm"
-          className="focus:ring-2 focus:ring-gray-300"
+          className="focus:ring-2 focus:ring-gray-300 rounded-full"
         >
           By Freestyle
         </Button>

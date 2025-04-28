@@ -25,13 +25,14 @@ type PromptInputContextType = {
   disabled?: boolean;
 };
 
-const PromptInputContext = createContext<PromptInputContextType>({
+const PromptInputContext = createContext<PromptInputContextType & { leftSlot?: React.ReactNode }>({
   isLoading: false,
   value: "",
   setValue: () => {},
   maxHeight: 240,
   onSubmit: undefined,
   disabled: false,
+  leftSlot: undefined,
 });
 
 function usePromptInput() {
@@ -50,6 +51,7 @@ type PromptInputProps = {
   onSubmit?: () => void;
   children: React.ReactNode;
   className?: string;
+  leftSlot?: React.ReactNode;
 };
 
 function PromptInput({
@@ -60,6 +62,7 @@ function PromptInput({
   onValueChange,
   onSubmit,
   children,
+  leftSlot,
 }: PromptInputProps) {
   const [internalValue, setInternalValue] = useState(value || "");
 
@@ -78,6 +81,7 @@ function PromptInput({
           maxHeight,
           onSubmit,
           disabled: false,
+          leftSlot,
         }}
       >
         <div
@@ -155,9 +159,16 @@ function PromptInputActions({
   className,
   ...props
 }: PromptInputActionsProps) {
+  const { leftSlot } = usePromptInput();
+  
   return (
-    <div className={cn("flex items-center gap-2", className)} {...props}>
-      {children}
+    <div className={cn("flex items-center justify-between w-full", className)} {...props}>
+      <div className="self-end pb-1">
+        {leftSlot}
+      </div>
+      <div className="flex items-center gap-2">
+        {children}
+      </div>
     </div>
   );
 }
