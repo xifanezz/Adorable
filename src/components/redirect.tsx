@@ -10,10 +10,12 @@ export function AppPageRedirect() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const message = urlParams.get("message");
+    const baseId = urlParams.get("baseId");
 
     if (message) {
       createApp({
         initialMessage: decodeURIComponent(message),
+        baseId: baseId as string,
       }).then((app) => {
         router.push(`/app/${app.id}?respond`);
       });

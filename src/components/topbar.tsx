@@ -12,7 +12,7 @@ export function TopBar({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="h-12 sticky top-0 flex items-center px-4 border-b border-gray-200">
+    <div className="h-12 sticky top-0 flex items-center px-4 border-b border-gray-200 bg-background">
       <Link href={"/"}>
         <HomeIcon />
       </Link>

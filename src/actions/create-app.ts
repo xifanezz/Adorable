@@ -6,8 +6,10 @@ import { freestyle } from "@/lib/freestyle";
 
 export async function createApp({
   initialMessage,
+  baseId,
 }: {
   initialMessage?: string;
+  baseId: string;
 }) {
   console.time("create git repo");
   const repo = await freestyle
@@ -15,7 +17,10 @@ export async function createApp({
       name: "Unnamed App",
       public: true,
       source: {
-        url: "https://github.com/freestyle-sh/freestyle-next",
+        url: {
+          "nextjs-dkjfgdf": "https://github.com/freestyle-sh/freestyle-next",
+          "vite-skdjfls": "https://github.com/freestyle-sh/freestyle-base-vite-react-typescript-swc"
+        }[baseId] ?? "https://github.com/freestyle-sh/freestyle-next",
         type: "git",
       },
     })
@@ -27,8 +32,8 @@ export async function createApp({
 
   console.time("start dev server");
   await freestyle.requestDevServer({
-    // repoUrl: url,
     repoId: repo.repoId,
+    baseId: baseId,
   }).then(() => {
     console.timeEnd("start dev server");
   });

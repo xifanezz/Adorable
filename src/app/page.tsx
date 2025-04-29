@@ -111,7 +111,12 @@ export default function Home() {
     // }
 
     router.push(
-      `/app/new?message=${encodeURIComponent(prompt)}&framework=${framework}`
+      `/app/new?message=${encodeURIComponent(prompt)}&baseId=${
+        {
+          next: "nextjs-dkjfgdf",
+          vite: "vite-skdjfls",
+        }[framework]
+      }`
     );
   };
 

@@ -5,7 +5,6 @@ import { ANTHROPIC_MODEL } from "@/lib/model";
 import { SYSTEM_MESSAGE } from "@/lib/system";
 import { ADORABLE_TOOLS } from "@/lib/tools";
 import { getAppIdFromHeaders } from "@/lib/utils";
-import { AnthropicProviderOptions } from "@ai-sdk/anthropic";
 import { createIdGenerator, Message, streamText } from "ai";
 
 export async function POST(req: Request) {
