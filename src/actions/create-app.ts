@@ -19,7 +19,8 @@ export async function createApp({
       source: {
         url: {
           "nextjs-dkjfgdf": "https://github.com/freestyle-sh/freestyle-next",
-          "vite-skdjfls": "https://github.com/freestyle-sh/freestyle-base-vite-react-typescript-swc"
+          "vite-skdjfls": "https://github.com/freestyle-sh/freestyle-base-vite-react-typescript-swc",
+          "expo-lksadfp": "https://github.com/freestyle-sh/freestyle-expo",
         }[baseId] ?? "https://github.com/freestyle-sh/freestyle-next",
         type: "git",
       },
@@ -31,9 +32,17 @@ export async function createApp({
   console.timeEnd("create git repo");
 
   console.time("start dev server");
+
+  // remapping baseIds because we don't have base image for expo yet
+  const BASE_IDS = {
+    "nextjs-dkjfgdf": "nextjs-dkjfgdf",
+    "vite-skdjfls": "vite-skdjfls",
+    "expo-lksadfp": "vite-skdjfls",
+  }
+
   await freestyle.requestDevServer({
     repoId: repo.repoId,
-    baseId: baseId,
+    baseId: BASE_IDS[baseId],
   }).then(() => {
     console.timeEnd("start dev server");
   });

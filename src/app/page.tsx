@@ -13,13 +13,12 @@ import LogoSvg from "@/logo.svg";
 import { useEffect, useState as useReactState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ExampleButton } from "@/components/ExampleButton";
-import { ArrowUp, Square } from "lucide-react";
 import { unstable_ViewTransition as ViewTransition } from "react";
 
 export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [framework, setFramework] = useState("next");
-  const [isLoading, _setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [isMounted, setIsMounted] = useReactState(false);
   const router = useRouter();
 
@@ -35,10 +34,10 @@ export default function Home() {
     "a potato farm.🇮🇪 🇮🇪 🇮🇪            ",
   ];
 
-  // Ensure hydration is complete before showing the glow effect
+  // Ensure hydration is complete before starting typing animation
   useEffect(() => {
     setIsMounted(true);
-  }, []);
+  });
 
   // Typing animation effect
   useEffect(() => {
@@ -98,24 +97,13 @@ export default function Home() {
   }, [isMounted]);
 
   const handleSubmit = async () => {
-    if (!prompt.trim()) return;
-
-    // setIsLoading(true);
-    // try {
-    //   const app = await createApp({
-    //     initialMessage: prompt,
-    //   });
-    //   router.push(`/app/${app.id}?respond`);
-    // } catch (error) {
-    //   console.error("Error creating app:", error);
-    //   setIsLoading(false);
-    // }
-
+    setIsLoading(true);
     router.push(
       `/app/new?message=${encodeURIComponent(prompt)}&baseId=${
         {
           next: "nextjs-dkjfgdf",
           vite: "vite-skdjfls",
+          expo: "expo-lksadfp",
         }[framework]
       }`
     );
@@ -124,36 +112,42 @@ export default function Home() {
   return (
     <ViewTransition>
       <main className="min-h-screen flex flex-col items-center justify-center p-4 relative">
-        <div className="flex flex-[1]" />
+        <div className="flex flex-[1] w-full">
+          <h1 className="text-xl">
+            <span className="font-bold">Adorable </span>
+            <a className="" href="https://www.freestyle.sh">
+              by freestyle.sh
+            </a>
+          </h1>
+        </div>
+
         <div className="w-full max-w-lg px-4 sm:px-0 mx-auto flex flex-col items-center">
-          {/* Logo */}
           <div className="w-32 h-32 mb-2">
             <Image src={LogoSvg} alt="Adorable Logo" width={128} height={128} />
           </div>
 
-          {/* Title */}
-          <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-center mb-4">
-            Adorable
-          </h1>
-
-          {/* Subtitle */}
           <p className="text-lg sm:text-xl md:text-2xl text-gray-600 text-center mb-6">
-            Open Source AI App Builder
+            <a
+              href="https://github.com/freestyle-sh/adorable"
+              className="rounded inline-block px-2 underline"
+            >
+              {/* <ArrowUpRight className={"inline-block"} /> */}
+              Open Source
+              {/* <GithubIcon className={"inline-block ml-2"} /> */}
+            </a>
+            AI App Builder
           </p>
 
-          {/* Prompt Input */}
           <div className="w-full relative my-5">
-            {/* Adaptable width container */}
             <div className="relative w-full max-w-full overflow-hidden">
-              {/* Custom input wrapper with adaptive width */}
               <div className="w-full bg-white/90 rounded-md relative z-10 border transition-colors">
-                <div className="absolute left-2 bottom-2 z-20">
-                  <FrameworkSelector
-                    value={framework}
-                    onChange={setFramework}
-                  />
-                </div>
                 <PromptInput
+                  leftSlot={
+                    <FrameworkSelector
+                      value={framework}
+                      onChange={setFramework}
+                    />
+                  }
                   isLoading={isLoading}
                   value={prompt}
                   onValueChange={setPrompt}
@@ -170,26 +164,18 @@ export default function Home() {
                     onBlur={() => {}}
                   />
                   <PromptInputActions>
-                    {/* Actions can go here if needed */}
+                    <Button
+                      variant={"ghost"}
+                      size="sm"
+                      // className="h-8 w-8 rounded-full shadow-md"
+                      onClick={handleSubmit}
+                      disabled={isLoading || !prompt.trim()}
+                      className="h-7"
+                    >
+                      Start Creating ⏎
+                    </Button>
                   </PromptInputActions>
                 </PromptInput>
-
-                {/* Absolutely positioned submit button */}
-                <div className="absolute right-3 bottom-3 z-20">
-                  <Button
-                    variant={isLoading ? "destructive" : "default"}
-                    size="icon"
-                    className="h-8 w-8 rounded-full shadow-md"
-                    onClick={handleSubmit}
-                    disabled={isLoading || !prompt.trim()}
-                  >
-                    {isLoading ? (
-                      <Square className="h-4 w-4" />
-                    ) : (
-                      <ArrowUp className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
               </div>
             </div>
           </div>
@@ -226,21 +212,6 @@ export default function Home() {
           </div>
         </div>
         <div className="flex flex-[3]" />
-
-        <a
-          href="https://style.dev"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="fixed bottom-4 right-4 text-xs sm:text-sm font-medium flex items-center gap-1"
-        >
-          <Button
-            variant="outline"
-            size="sm"
-            className="focus:ring-2 focus:ring-gray-300 rounded-full"
-          >
-            By Freestyle
-          </Button>
-        </a>
       </main>
     </ViewTransition>
   );

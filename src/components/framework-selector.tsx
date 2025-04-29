@@ -26,14 +26,14 @@ export function FrameworkSelector({
   const frameworkLogos = {
     next: "/logos/next.svg",
     vite: "/logos/vite.svg",
-    // expo: "/logos/expo.svg",
+    expo: "/logos/expo.svg",
   };
 
   // Map of framework names to their display names
   const frameworkNames = {
     next: "Next.js",
     vite: "Vite",
-    // expo: "Expo",
+    expo: "Expo",
   };
 
   const handleSelect = (framework: string) => {

@@ -6,6 +6,7 @@ import { SYSTEM_MESSAGE } from "@/lib/system";
 import { ADORABLE_TOOLS } from "@/lib/tools";
 import { getAppIdFromHeaders } from "@/lib/utils";
 import { createIdGenerator, Message, streamText } from "ai";
+import util from "node:util";
 
 export async function POST(req: Request) {
   const appId = getAppIdFromHeaders(req);
@@ -42,12 +43,15 @@ export async function POST(req: Request) {
     //   } satisfies AnthropicProviderOptions,
     // },
     onStepFinish: async (step) => {
-      // console.log({
-      //   stepType: step.stepType,
-      //   text: step.text,
-      //   toolCalls: step.toolCalls,
-      //   toolResults: step.toolResults,
-      // });
+      console.log(util.inspect({
+        stepType: step.stepType,
+        text: step.text,
+        toolCalls: step.toolCalls,
+        toolResults: step.toolResults,
+      }, {
+        depth: 10,
+        colors: true,
+      }));
     },
     maxSteps: 20,
     experimental_generateMessageId: createIdGenerator({
