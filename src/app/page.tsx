@@ -14,6 +14,7 @@ import { useEffect, useState as useReactState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ExampleButton } from "@/components/ExampleButton";
 import { ArrowUp, Square } from "lucide-react";
+import { unstable_ViewTransition as ViewTransition } from "react";
 
 export default function Home() {
   const [prompt, setPrompt] = useState("");
@@ -121,121 +122,126 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-4 relative">
-      <div className="flex flex-[1]" />
-      <div className="w-full max-w-lg px-4 sm:px-0 mx-auto flex flex-col items-center">
-        {/* Logo */}
-        <div className="w-32 h-32 mb-2">
-          <Image src={LogoSvg} alt="Adorable Logo" width={128} height={128} />
-        </div>
+    <ViewTransition>
+      <main className="min-h-screen flex flex-col items-center justify-center p-4 relative">
+        <div className="flex flex-[1]" />
+        <div className="w-full max-w-lg px-4 sm:px-0 mx-auto flex flex-col items-center">
+          {/* Logo */}
+          <div className="w-32 h-32 mb-2">
+            <Image src={LogoSvg} alt="Adorable Logo" width={128} height={128} />
+          </div>
 
-        {/* Title */}
-        <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-center mb-4">
-          Adorable
-        </h1>
+          {/* Title */}
+          <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-center mb-4">
+            Adorable
+          </h1>
 
-        {/* Subtitle */}
-        <p className="text-lg sm:text-xl md:text-2xl text-gray-600 text-center mb-6">
-          Open Source AI App Builder
-        </p>
+          {/* Subtitle */}
+          <p className="text-lg sm:text-xl md:text-2xl text-gray-600 text-center mb-6">
+            Open Source AI App Builder
+          </p>
 
-        {/* Prompt Input */}
-        <div className="w-full relative my-5">
-          {/* Adaptable width container */}
-          <div className="relative w-full max-w-full overflow-hidden">
-            {/* Custom input wrapper with adaptive width */}
-            <div className="w-full bg-white/90 rounded-md relative z-10 border transition-colors">
-              <div className="absolute left-2 bottom-2 z-20">
-                <FrameworkSelector value={framework} onChange={setFramework} />
-              </div>
-              <PromptInput
-                isLoading={isLoading}
-                value={prompt}
-                onValueChange={setPrompt}
-                onSubmit={handleSubmit}
-                className="relative z-10 border-none bg-transparent shadow-none focus-within:border-gray-400 focus-within:ring-1 focus-within:ring-gray-200 transition-all duration-200 ease-in-out "
-              >
-                <PromptInputTextarea
-                  ref={placeholderRef}
-                  placeholder={placeholderText ?? fullPlaceholder}
-                  className="min-h-[100px] w-full bg-transparent backdrop-blur-sm pr-12"
-                  onFocus={() => {
-                    // setGlowColors(RAINBOW_COLORS);
-                  }}
-                  onBlur={() => {}}
-                />
-                <PromptInputActions>
-                  {/* Actions can go here if needed */}
-                </PromptInputActions>
-              </PromptInput>
-
-              {/* Absolutely positioned submit button */}
-              <div className="absolute right-3 bottom-3 z-20">
-                <Button
-                  variant={isLoading ? "destructive" : "default"}
-                  size="icon"
-                  className="h-8 w-8 rounded-full shadow-md"
-                  onClick={handleSubmit}
-                  disabled={isLoading || !prompt.trim()}
+          {/* Prompt Input */}
+          <div className="w-full relative my-5">
+            {/* Adaptable width container */}
+            <div className="relative w-full max-w-full overflow-hidden">
+              {/* Custom input wrapper with adaptive width */}
+              <div className="w-full bg-white/90 rounded-md relative z-10 border transition-colors">
+                <div className="absolute left-2 bottom-2 z-20">
+                  <FrameworkSelector
+                    value={framework}
+                    onChange={setFramework}
+                  />
+                </div>
+                <PromptInput
+                  isLoading={isLoading}
+                  value={prompt}
+                  onValueChange={setPrompt}
+                  onSubmit={handleSubmit}
+                  className="relative z-10 border-none bg-transparent shadow-none focus-within:border-gray-400 focus-within:ring-1 focus-within:ring-gray-200 transition-all duration-200 ease-in-out "
                 >
-                  {isLoading ? (
-                    <Square className="h-4 w-4" />
-                  ) : (
-                    <ArrowUp className="h-4 w-4" />
-                  )}
-                </Button>
+                  <PromptInputTextarea
+                    ref={placeholderRef}
+                    placeholder={placeholderText ?? fullPlaceholder}
+                    className="min-h-[100px] w-full bg-transparent backdrop-blur-sm pr-12"
+                    onFocus={() => {
+                      // setGlowColors(RAINBOW_COLORS);
+                    }}
+                    onBlur={() => {}}
+                  />
+                  <PromptInputActions>
+                    {/* Actions can go here if needed */}
+                  </PromptInputActions>
+                </PromptInput>
+
+                {/* Absolutely positioned submit button */}
+                <div className="absolute right-3 bottom-3 z-20">
+                  <Button
+                    variant={isLoading ? "destructive" : "default"}
+                    size="icon"
+                    className="h-8 w-8 rounded-full shadow-md"
+                    onClick={handleSubmit}
+                    disabled={isLoading || !prompt.trim()}
+                  >
+                    {isLoading ? (
+                      <Square className="h-4 w-4" />
+                    ) : (
+                      <ArrowUp className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Example pills - moved outside the div with glow */}
-        <div className="mt-6">
-          <p className="text-center text-xs text-gray-500 mb-2">Examples</p>
-          <div className="flex flex-wrap justify-center gap-2">
-            <ExampleButton
-              text="Dog Food Marketplace"
-              promptText="Build a dog food marketplace where users can browse and purchase premium dog food."
-              onClick={(text) => {
-                console.log("Example clicked:", text);
-                setPrompt(text);
-              }}
-            />
-            <ExampleButton
-              text="Personal Website"
-              promptText="Create a personal website with portfolio, blog, and contact sections."
-              onClick={(text) => {
-                console.log("Example clicked:", text);
-                setPrompt(text);
-              }}
-            />
-            <ExampleButton
-              text="Burrito B2B SaaS"
-              promptText="Build a B2B SaaS for burrito shops to manage inventory, orders, and delivery logistics."
-              onClick={(text) => {
-                console.log("Example clicked:", text);
-                setPrompt(text);
-              }}
-            />
+          {/* Example pills - moved outside the div with glow */}
+          <div className="mt-6">
+            <p className="text-center text-xs text-gray-500 mb-2">Examples</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              <ExampleButton
+                text="Dog Food Marketplace"
+                promptText="Build a dog food marketplace where users can browse and purchase premium dog food."
+                onClick={(text) => {
+                  console.log("Example clicked:", text);
+                  setPrompt(text);
+                }}
+              />
+              <ExampleButton
+                text="Personal Website"
+                promptText="Create a personal website with portfolio, blog, and contact sections."
+                onClick={(text) => {
+                  console.log("Example clicked:", text);
+                  setPrompt(text);
+                }}
+              />
+              <ExampleButton
+                text="Burrito B2B SaaS"
+                promptText="Build a B2B SaaS for burrito shops to manage inventory, orders, and delivery logistics."
+                onClick={(text) => {
+                  console.log("Example clicked:", text);
+                  setPrompt(text);
+                }}
+              />
+            </div>
           </div>
         </div>
-      </div>
-      <div className="flex flex-[3]" />
+        <div className="flex flex-[3]" />
 
-      <a
-        href="https://style.dev"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-4 right-4 text-xs sm:text-sm font-medium flex items-center gap-1"
-      >
-        <Button
-          variant="outline"
-          size="sm"
-          className="focus:ring-2 focus:ring-gray-300 rounded-full"
+        <a
+          href="https://style.dev"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-4 right-4 text-xs sm:text-sm font-medium flex items-center gap-1"
         >
-          By Freestyle
-        </Button>
-      </a>
-    </main>
+          <Button
+            variant="outline"
+            size="sm"
+            className="focus:ring-2 focus:ring-gray-300 rounded-full"
+          >
+            By Freestyle
+          </Button>
+        </a>
+      </main>
+    </ViewTransition>
   );
 }

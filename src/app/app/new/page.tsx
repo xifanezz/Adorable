@@ -1,6 +1,6 @@
-import Chat from "@/components/chat";
-import { AppPageRedirect } from "@/components/redirect";
-import { TopBar } from "@/components/topbar";
+import { createApp } from "@/actions/create-app";
+import { redirect } from "next/navigation";
+import "@/components/loader.css";
 
 export default async function AppPage({
   searchParams,
@@ -8,31 +8,12 @@ export default async function AppPage({
   searchParams: Promise<{ [key: string]: string | string[] }>;
   params: Promise<{ id: string }>;
 }) {
-  const { message } = await searchParams;
+  const { message, baseId } = await searchParams;
 
-  return (
-    <div className="h-screen grid grid-cols-1">
-      <AppPageRedirect />
-      <div className="grid grid-cols-[1fr_2fr] overflow-hidden">
-        <div className="overflow-auto">
-          <TopBar appName="" />
-          <Chat
-            appId={"new"}
-            initialMessages={[
-              {
-                content: decodeURIComponent(message as string),
-                role: "user",
-                id: "init-" + crypto.randomUUID(),
-                createdAt: new Date(),
-              },
-            ]}
-            isLoading={true}
-          />
-        </div>
-        <div className="overflow-auto border-l">
-          {/* <Preview activeView={activeView} repo={repo} /> */}
-        </div>
-      </div>
-    </div>
-  );
+  const { id } = await createApp({
+    initialMessage: decodeURIComponent(message),
+    baseId: baseId as string,
+  });
+
+  redirect(`/app/${id}?respond`);
 }

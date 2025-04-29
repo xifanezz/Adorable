@@ -7,8 +7,6 @@ import { Message } from "ai";
 import { createContext } from "react";
 import { useContext } from "react";
 import { TopBar } from "./topbar";
-import { HomeIcon } from "lucide-react";
-import Link from "next/link";
 
 export const RepoContext = createContext<string | undefined>(undefined);
 
@@ -27,6 +25,7 @@ export default function AppWrapper({
   respond,
   appId,
   repoId,
+  baseId,
 }: {
   appName: string;
   repo: string;
@@ -34,6 +33,7 @@ export default function AppWrapper({
   respond?: boolean;
   initialMessages: Message[];
   repoId: string;
+  baseId: string;
 }) {
   const [activeView, setActiveView] = useState<"web" | "files">("web");
 
@@ -51,7 +51,7 @@ export default function AppWrapper({
           </div>
 
           <div className="overflow-auto">
-            <Preview activeView={activeView} repo={repo} />
+            <Preview activeView={activeView} repo={repo} baseId={baseId} />
           </div>
         </div>
       </div>

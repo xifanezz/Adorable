@@ -42,12 +42,12 @@ export async function POST(req: Request) {
     //   } satisfies AnthropicProviderOptions,
     // },
     onStepFinish: async (step) => {
-      console.log({
-        stepType: step.stepType,
-        text: step.text,
-        toolCalls: step.toolCalls,
-        toolResults: step.toolResults,
-      });
+      // console.log({
+      //   stepType: step.stepType,
+      //   text: step.text,
+      //   toolCalls: step.toolCalls,
+      //   toolResults: step.toolResults,
+      // });
     },
     maxSteps: 20,
     experimental_generateMessageId: createIdGenerator({
