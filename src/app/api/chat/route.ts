@@ -43,15 +43,15 @@ export async function POST(req: Request) {
     //   } satisfies AnthropicProviderOptions,
     // },
     onStepFinish: async (step) => {
-      console.log(util.inspect({
-        stepType: step.stepType,
-        text: step.text,
-        toolCalls: step.toolCalls,
-        toolResults: step.toolResults,
-      }, {
-        depth: 10,
-        colors: true,
-      }));
+      // console.log(util.inspect({
+      //   stepType: step.stepType,
+      //   text: step.text,
+      //   toolCalls: step.toolCalls,
+      //   toolResults: step.toolResults,
+      // }, {
+      //   depth: 10,
+      //   colors: true,
+      // }));
     },
     maxSteps: 20,
     experimental_generateMessageId: createIdGenerator({

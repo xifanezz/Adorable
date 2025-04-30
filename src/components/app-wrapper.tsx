@@ -26,6 +26,7 @@ export default function AppWrapper({
   appId,
   repoId,
   baseId,
+  codeServerUrl,
 }: {
   appName: string;
   repo: string;
@@ -34,6 +35,7 @@ export default function AppWrapper({
   initialMessages: Message[];
   repoId: string;
   baseId: string;
+  codeServerUrl: string;
 }) {
   const [activeView, setActiveView] = useState<"web" | "files">("web");
 
@@ -42,7 +44,7 @@ export default function AppWrapper({
       <div className="h-screen grid grid-cols-1">
         <div className="grid grid-cols-[1fr_2fr] overflow-hidden">
           <div className="h-screen overflow-auto">
-            <TopBar appName={appName} />
+            <TopBar appName={appName} codeServerUrl={codeServerUrl} />
             <Chat
               appId={appId}
               initialMessages={initialMessages}

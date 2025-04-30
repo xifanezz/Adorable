@@ -5,6 +5,7 @@ import AppWrapper from "../../../components/app-wrapper";
 import { redirect } from "next/navigation";
 import { repairBrokenMessages } from "@/app/api/chat/route";
 import { unstable_ViewTransition as ViewTransition } from "react";
+import { freestyle } from "@/lib/freestyle";
 
 export default async function AppPage({
   params,
@@ -17,6 +18,10 @@ export default async function AppPage({
   const { respond } = await searchParams;
   const app = await getApp(id).catch(() => undefined);
 
+  const { codeServerUrl } = await freestyle.requestDevServer({
+    repoId: app?.info.gitRepo,
+  });
+
   if (!app) {
     redirect("/");
   }
@@ -26,6 +31,7 @@ export default async function AppPage({
   return (
     <ViewTransition>
       <AppWrapper
+        codeServerUrl={codeServerUrl}
         appName={app.info.name}
         initialMessages={app.messages}
         respond={respond != undefined}
