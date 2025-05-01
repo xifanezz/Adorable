@@ -98,7 +98,7 @@ function MessageBody({ message }: { message: Message }) {
   if (message.role === "user") {
     return (
       <div className="flex justify-end py-1 mb-4">
-        <div className="bg-accent rounded-xl px-4 py-1 max-w-[80%] ml-auto">
+        <div className="bg-neutral-200 dark:bg-neutral-700 rounded-xl px-4 py-1 max-w-[80%] ml-auto">
           {message.content}
         </div>
       </div>
@@ -121,15 +121,35 @@ function MessageBody({ message }: { message: Message }) {
 
           if (part.type === "tool-invocation") {
             if (
-              message.parts!.length - 1 == index &&
-              part.toolInvocation.state !== "result"
+              part.toolInvocation.state === "result" &&
+              part.toolInvocation.result.isError
             ) {
               return (
-                <ToolMessage key={index} toolInvocation={part.toolInvocation} />
+                <div
+                  key={index}
+                  className="border-red-500 border text-sm text-red-800 rounded bg-red-100 px-2 py-1 mt-2 mb-4"
+                >
+                  {part.toolInvocation.result?.content?.map(
+                    (content: { type: "text"; text: string }, i: number) => (
+                      <div key={i}>{content.text}</div>
+                    )
+                  )}
+                  {/* Unexpectedly failed while using tool{" "}
+                  {part.toolInvocation.toolName}. Please try again. again. */}
+                </div>
               );
-            } else {
-              return undefined;
             }
+
+            // if (
+            //   message.parts!.length - 1 == index &&
+            //   part.toolInvocation.state !== "result"
+            // ) {
+            return (
+              <ToolMessage key={index} toolInvocation={part.toolInvocation} />
+            );
+            // } else {
+            //   return undefined;
+            // }
           }
         })}
       </div>

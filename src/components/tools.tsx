@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import { ToolInvocation } from "ai";
 
 export function ToolMessage({
@@ -13,13 +14,18 @@ export function ToolMessage({
       <ToolBlock
         name="listing directory"
         argsText={toolInvocation.args?.path}
+        toolInvocation={toolInvocation}
       />
     );
   }
 
   if (toolInvocation.toolName === "read_file") {
     return (
-      <ToolBlock name="reading file" argsText={toolInvocation.args?.path} />
+      <ToolBlock
+        name="read file"
+        argsText={toolInvocation.args?.path.split("/").slice(2).join("/")}
+        toolInvocation={toolInvocation}
+      />
     );
   }
 
@@ -31,10 +37,31 @@ export function ToolMessage({
     return <WriteFileTool toolInvocation={toolInvocation} />;
   }
 
+  if (toolInvocation.toolName === "exec") {
+    return (
+      <ToolBlock
+        name="exec"
+        toolInvocation={toolInvocation}
+        argsText={toolInvocation.args.command}
+      />
+    );
+  }
+
+  if (toolInvocation.toolName === "create_directory") {
+    return (
+      <ToolBlock
+        name="create directory"
+        toolInvocation={toolInvocation}
+        argsText={toolInvocation.args?.path.split("/").slice(2).join("/")}
+      />
+    );
+  }
+
   // Fallback for other tools
   return (
     <ToolBlock
-      name={"running: " + toolInvocation.toolName.replaceAll("_", " ")}
+      toolInvocation={toolInvocation}
+      name={toolInvocation.toolName.replaceAll("_", " ")}
     >
       {/* <div className="text-sm text-gray-500">
         {JSON.stringify(toolInvocation.args, null, 2)}
@@ -67,7 +94,11 @@ function DefaultContentRenderer(props: {
 
 function EditFileTool({ toolInvocation }: { toolInvocation: ToolInvocation }) {
   return (
-    <ToolBlock name="editing file" argsText={toolInvocation.args?.path}>
+    <ToolBlock
+      name="edit file"
+      argsText={toolInvocation.args?.path.split("/").slice(2).join("/")}
+      toolInvocation={toolInvocation}
+    >
       {/* <div className="grid gap-2">
         {toolInvocation.args?.edits?.map(
           (edit: { newText: string; oldText: string }, index: number) => (
@@ -97,8 +128,8 @@ function EditFileTool({ toolInvocation }: { toolInvocation: ToolInvocation }) {
 function WriteFileTool({ toolInvocation }: { toolInvocation: ToolInvocation }) {
   return (
     <ToolBlock
-      name="writing file"
-      argsText={toolInvocation.args?.path}
+      name="write file"
+      argsText={toolInvocation.args?.path.split("/").slice(2).join("/")}
       toolInvocation={toolInvocation}
     >
       {/* <div className="rounded overflow-hidden">
@@ -123,9 +154,22 @@ function ToolBlock(props: {
   return (
     <div>
       <div className="flex py-1">
-        <div className="text-sm bg-gray-800 animate-pulse text-white px-2 rounded">
+        <div
+          className={cn(
+            "text-sm  px-2 mt-2 py-1 rounded max-h-24 overflow-scroll max-w-sm",
+            props.toolInvocation?.state !== "result"
+              ? "animate-pulse bg-gray-800 text-white"
+              : "border border-neutral-500 text-neutral-500"
+          )}
+        >
           <span className="font-bold">{props.name}</span>{" "}
-          <span className="text-gray-200">{props.argsText}</span>
+          <span
+            className={cn(
+              props.toolInvocation?.state !== "result" ? "text-gray-200" : ""
+            )}
+          >
+            {props.argsText}
+          </span>
         </div>
       </div>
       {props.children && <div className="mb-2">{props.children}</div>}

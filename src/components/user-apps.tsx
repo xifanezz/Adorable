@@ -12,11 +12,7 @@ export function UserApps() {
   return (
     <div className="flex gap-2 justify-center items-center">
       {data.map((app) => (
-        <a
-          href={`/app/${app.id}`}
-          key={app.id}
-          className="w-full cursor-pointer w-sm"
-        >
+        <a href={`/app/${app.id}`} key={app.id} className="cursor-pointer w-sm">
           <Card className="p-4 border-b border rounded-md">
             <CardHeader>
               <CardTitle>{app.firstMessage?.content}</CardTitle>

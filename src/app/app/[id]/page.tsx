@@ -3,13 +3,13 @@
 import { getApp } from "@/actions/get-app";
 import AppWrapper from "../../../components/app-wrapper";
 import { redirect } from "next/navigation";
-import { repairBrokenMessages } from "@/app/api/chat/route";
 import { unstable_ViewTransition as ViewTransition } from "react";
 import { freestyle } from "@/lib/freestyle";
 import { db } from "@/lib/db";
 import { appUsers } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getUser } from "@/auth/stack-auth";
+import { repairBrokenMessages } from "@/lib/message-prompt-utils";
 
 export default async function AppPage({
   params,

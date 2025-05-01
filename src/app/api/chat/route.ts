@@ -1,6 +1,7 @@
 import { getApp } from "@/actions/get-app";
 import { saveResponseMessages } from "@/lib/db";
 import { freestyle } from "@/lib/freestyle";
+import { repairBrokenMessages, truncateFileToolCalls } from "@/lib/message-prompt-utils";
 import { ANTHROPIC_MODEL } from "@/lib/model";
 import { SYSTEM_MESSAGE } from "@/lib/system";
 import { ADORABLE_TOOLS } from "@/lib/tools";
@@ -25,10 +26,13 @@ export async function POST(req: Request) {
     repoId: app.info.gitRepo,
   });
 
-  const { messages }: { id: string; messages: Array<Message> } =
+  const { messages: originalMessages }: { id: string; messages: Array<Message> } =
     await req.json();
 
-  repairBrokenMessages(messages);
+  // Truncate file-related tool calls to reduce token usage
+  const truncatedMessages = truncateFileToolCalls(originalMessages);
+
+  repairBrokenMessages(truncatedMessages);
 
   const result = streamText({
     tools: await ADORABLE_TOOLS({
@@ -43,15 +47,15 @@ export async function POST(req: Request) {
     //   } satisfies AnthropicProviderOptions,
     // },
     onStepFinish: async (step) => {
-      // console.log(util.inspect({
-      //   stepType: step.stepType,
-      //   text: step.text,
-      //   toolCalls: step.toolCalls,
-      //   toolResults: step.toolResults,
-      // }, {
-      //   depth: 10,
-      //   colors: true,
-      // }));
+      console.log(util.inspect({
+        stepType: step.stepType,
+        text: step.text,
+        toolCalls: step.toolCalls,
+        toolResults: step.toolResults,
+      }, {
+        depth: 10,
+        colors: true,
+      }));
     },
     maxSteps: 20,
     experimental_generateMessageId: createIdGenerator({
@@ -61,11 +65,11 @@ export async function POST(req: Request) {
     onFinish: async ({ response }) => {
       await saveResponseMessages({
         appId,
-        messages,
+        messages: originalMessages,
         responseMessages: response.messages,
       });
     },
-    messages: messages,
+    messages: truncatedMessages,
     model: ANTHROPIC_MODEL,
     system: SYSTEM_MESSAGE,
   });
@@ -75,23 +79,3 @@ export async function POST(req: Request) {
   return result.toDataStreamResponse();
 }
 
-export function repairBrokenMessages(messages: Message[]) {
-  for (const message of messages) {
-    if (message.role !== "assistant" || !message.parts) continue;
-
-    for (const part of message.parts) {
-      if (part.type !== "tool-invocation") continue;
-      if (part.toolInvocation.state === "result" && part.toolInvocation.result) continue;
-
-      part.toolInvocation = {
-        ...part.toolInvocation,
-        state: "result",
-        result: {
-          content: [
-            { type: "text", text: "unknown error" },],
-          isError: true,
-        }
-      }
-    }
-  }
-}
