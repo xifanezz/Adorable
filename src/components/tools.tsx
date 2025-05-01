@@ -13,7 +13,7 @@ export function ToolMessage({
     return (
       <ToolBlock
         name="listing directory"
-        argsText={toolInvocation.args?.path}
+        argsText={toolInvocation.args?.path?.split("/").slice(2).join("/")}
         toolInvocation={toolInvocation}
       />
     );
@@ -23,7 +23,7 @@ export function ToolMessage({
     return (
       <ToolBlock
         name="read file"
-        argsText={toolInvocation.args?.path.split("/").slice(2).join("/")}
+        argsText={toolInvocation.args?.path?.split("/").slice(2).join("/")}
         toolInvocation={toolInvocation}
       />
     );
@@ -52,7 +52,7 @@ export function ToolMessage({
       <ToolBlock
         name="create directory"
         toolInvocation={toolInvocation}
-        argsText={toolInvocation.args?.path.split("/").slice(2).join("/")}
+        argsText={toolInvocation.args?.path?.split("/").slice(2).join("/")}
       />
     );
   }
@@ -96,7 +96,7 @@ function EditFileTool({ toolInvocation }: { toolInvocation: ToolInvocation }) {
   return (
     <ToolBlock
       name="edit file"
-      argsText={toolInvocation.args?.path.split("/").slice(2).join("/")}
+      argsText={toolInvocation.args?.path?.split("/").slice(2).join("/")}
       toolInvocation={toolInvocation}
     >
       {/* <div className="grid gap-2">
@@ -129,7 +129,7 @@ function WriteFileTool({ toolInvocation }: { toolInvocation: ToolInvocation }) {
   return (
     <ToolBlock
       name="write file"
-      argsText={toolInvocation.args?.path.split("/").slice(2).join("/")}
+      argsText={toolInvocation.args?.path?.split("/").slice(2).join("/")}
       toolInvocation={toolInvocation}
     >
       {/* <div className="rounded overflow-hidden">

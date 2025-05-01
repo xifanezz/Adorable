@@ -140,7 +140,7 @@ export default function Home() {
             <div className="w-full -mx-1 flex flex-col items-end col-start-1 col-end-1 row-start-1 row-end-1 opacity-20 select-none">
               {/* placeholder for background */}
             </div>
-            <div className="w-full max-w-lg px-4 sm:px-0 mx-auto flex flex-col items-center mt-32 col-start-1 col-end-1 row-start-1 row-end-1">
+            <div className="w-full max-w-lg px-4 sm:px-0 mx-auto flex flex-col items-center mt-32 col-start-1 col-end-1 row-start-1 row-end-1 z-10">
               <p className="text-neutral-600 text-center mb-6 text-5xl font-bold">
                 Let AI Cook
               </p>
@@ -184,7 +184,7 @@ export default function Home() {
               </div>
               <Examples setPrompt={setPrompt} />
               <div className="mt-8 mb-16">
-                <a className="bg-blue-500 text-white rounded-md px-4 py-2 mt-4 text-sm font-semibold hover:bg-blue-600 transition-colors duration-200 ease-in-out cursor-pointer w-72 text-center block">
+                <a className="border rounded-md px-4 py-2 mt-4 text-sm font-semibold transition-colors duration-200 ease-in-out cursor-pointer w-72 text-center block">
                   <span className="block font-bold">
                     By <span className="underline">freestyle.sh</span>
                   </span>
