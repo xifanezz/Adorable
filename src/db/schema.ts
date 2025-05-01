@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, json } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid, json, pgEnum } from "drizzle-orm/pg-core";
 
 import type { Message } from "ai";
 
@@ -8,6 +8,21 @@ export const appsTable = pgTable("apps", {
   description: text("description").notNull().default("No description"),
   gitRepo: text("git_repo").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  baseId: text("base_id").notNull().default("nextjs-dkjfgdf"),
+});
+
+export const appPermissions = pgEnum("app_user_permission", ["read", "write", "admin"]);
+
+export const appUsers = pgTable("app_users", {
+  userId: text("user_id").notNull(),
+  appId: uuid("app_id")
+    .notNull()
+    .references(() => appsTable.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  permissions: appPermissions("permissions"),
+  freestyleIdentity: text("freestyle_identity").notNull(),
+  freestyleAccessToken: text("freestyle_access_token").notNull(),
+  freestyleAccessTokenId: text("freestyle_access_token_id").notNull(),
 });
 
 export const messagesTable = pgTable("messages", {

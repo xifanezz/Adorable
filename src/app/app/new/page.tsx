@@ -1,6 +1,7 @@
 import { createApp } from "@/actions/create-app";
 import { redirect } from "next/navigation";
 import "@/components/loader.css";
+import { getUser } from "@/auth/stack-auth";
 
 export default async function AppPage({
   searchParams,
@@ -8,11 +9,20 @@ export default async function AppPage({
   searchParams: Promise<{ [key: string]: string | string[] }>;
   params: Promise<{ id: string }>;
 }) {
-  const { message, baseId } = await searchParams;
+  const user = await getUser();
+  const search = await searchParams;
+
+  if (!user) {
+    redirect(
+      `/handler/sign-in?after_auth_return_to=${
+        encodeURIComponent("/app/new?") + new URLSearchParams(search).toString()
+      }`
+    );
+  }
 
   const { id } = await createApp({
-    initialMessage: decodeURIComponent(message),
-    baseId: baseId as string,
+    initialMessage: decodeURIComponent(search.message),
+    baseId: search.baseId as string,
   });
 
   redirect(`/app/${id}?respond`);

@@ -1,8 +1,10 @@
 "use server";
 
-import { appsTable, messagesTable } from "@/db/schema";
+import { getUser } from "@/auth/stack-auth";
+import { appsTable, appUsers, messagesTable } from "@/db/schema";
 import { db } from "@/lib/db";
 import { freestyle } from "@/lib/freestyle";
+
 
 export async function createApp({
   initialMessage,
@@ -11,6 +13,8 @@ export async function createApp({
   initialMessage?: string;
   baseId: string;
 }) {
+  const user = await getUser();
+
   console.time("create git repo");
   const repo = await freestyle
     .createGitRepository({
@@ -29,6 +33,13 @@ export async function createApp({
       console.error("Error creating git repository:", JSON.stringify(e));
       throw new Error("Failed to create git repository");
     });
+
+  await freestyle.grantGitPermission({
+    identityId: user.freestyleIdentity,
+    repoId: repo.repoId,
+    permission: "write",
+  });
+
   console.timeEnd("create git repo");
 
   console.time("start dev server");
@@ -40,7 +51,6 @@ export async function createApp({
     "expo-lksadfp": "vite-skdjfls",
   }
 
-
   await freestyle.requestDevServer({
     repoId: repo.repoId,
     baseId: BASE_IDS[baseId],
@@ -48,16 +58,31 @@ export async function createApp({
     console.timeEnd("start dev server");
   });
 
-  const appInsertion = await db
-    .insert(appsTable)
-    .values({
-      gitRepo: repo.repoId,
-    })
-    .returning();
+  const token = await freestyle.createGitAccessToken({
+    identityId: user.freestyleIdentity,
+  });
 
-  const app = appInsertion[0];
+  const app = await db.transaction(async (tx) => {
+    const appInsertion = await tx.insert(appsTable)
+      .values({
+        gitRepo: repo.repoId,
+      })
+      .returning();
+
+    await tx.insert(appUsers).values({
+      appId: appInsertion[0].id,
+      userId: user.userId,
+      permissions: "admin",
+      freestyleAccessToken: token.token,
+      freestyleAccessTokenId: token.id,
+      freestyleIdentity: user.freestyleIdentity,
+    }).returning();
+
+    return appInsertion[0];
+  });
 
   console.time("insert initial message");
+
   if (initialMessage) {
     const id = `init-${crypto.randomUUID()}`;
     await db
@@ -84,6 +109,7 @@ export async function createApp({
         throw new Error("Failed to insert initial message");
       });
   }
+
   console.timeEnd("insert initial message");
 
   return app;

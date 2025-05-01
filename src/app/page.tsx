@@ -14,6 +14,8 @@ import { useEffect, useState as useReactState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ExampleButton } from "@/components/ExampleButton";
 import { unstable_ViewTransition as ViewTransition } from "react";
+import { UserButton } from "@stackframe/stack";
+import { ModeToggle } from "@/components/theme-provider";
 
 export default function Home() {
   const [prompt, setPrompt] = useState("");
@@ -111,36 +113,44 @@ export default function Home() {
 
   return (
     <ViewTransition>
-      <main className="min-h-screen flex flex-col items-center justify-center p-4 relative">
-        <div className="flex flex-[1] w-full">
+      <main className="min-h-screen p-4 relative">
+        <div className="flex w-full justify-between items-center">
           <h1 className="text-xl">
-            <span className="font-bold">Adorable </span>
+            <span className="font-bold">Adorable</span>{" "}
             <a className="" href="https://www.freestyle.sh">
               by freestyle.sh
             </a>
           </h1>
+          <div className="flex items-center gap-2">
+            <ModeToggle />
+            <UserButton />
+          </div>
         </div>
 
-        <div className="w-full max-w-lg px-4 sm:px-0 mx-auto flex flex-col items-center">
+        <div className="w-full max-w-lg px-4 sm:px-0 mx-auto flex flex-col items-center mt-40">
           <div className="w-32 h-32 mb-2">
-            <Image src={LogoSvg} alt="Adorable Logo" width={128} height={128} />
+            <Image
+              className="dark:invert"
+              src={LogoSvg}
+              alt="Adorable Logo"
+              width={128}
+              height={128}
+            />
           </div>
 
-          <p className="text-lg sm:text-xl md:text-2xl text-gray-600 text-center mb-6">
+          <p className="text-lg sm:text-xl md:text-2xl text-neutral-600 text-center mb-6">
             <a
               href="https://github.com/freestyle-sh/adorable"
               className="rounded inline-block px-2 underline"
             >
-              {/* <ArrowUpRight className={"inline-block"} /> */}
               Open Source
-              {/* <GithubIcon className={"inline-block ml-2"} /> */}
             </a>
             AI App Builder
           </p>
 
           <div className="w-full relative my-5">
             <div className="relative w-full max-w-full overflow-hidden">
-              <div className="w-full bg-white/90 rounded-md relative z-10 border transition-colors">
+              <div className="w-full bg-accent rounded-md relative z-10 border transition-colors">
                 <PromptInput
                   leftSlot={
                     <FrameworkSelector
@@ -157,17 +167,13 @@ export default function Home() {
                   <PromptInputTextarea
                     ref={placeholderRef}
                     placeholder={placeholderText ?? fullPlaceholder}
-                    className="min-h-[100px] w-full bg-transparent backdrop-blur-sm pr-12"
-                    onFocus={() => {
-                      // setGlowColors(RAINBOW_COLORS);
-                    }}
+                    className="min-h-[100px] w-full bg-transparent dark:bg-transparent backdrop-blur-sm pr-12"
                     onBlur={() => {}}
                   />
                   <PromptInputActions>
                     <Button
                       variant={"ghost"}
                       size="sm"
-                      // className="h-8 w-8 rounded-full shadow-md"
                       onClick={handleSubmit}
                       disabled={isLoading || !prompt.trim()}
                       className="h-7"
@@ -180,7 +186,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Example pills - moved outside the div with glow */}
           <div className="mt-6">
             <p className="text-center text-xs text-gray-500 mb-2">Examples</p>
             <div className="flex flex-wrap justify-center gap-2">
@@ -211,7 +216,6 @@ export default function Home() {
             </div>
           </div>
         </div>
-        <div className="flex flex-[3]" />
       </main>
     </ViewTransition>
   );

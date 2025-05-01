@@ -10,9 +10,11 @@ export async function getApp(id: string) {
     .from(appsTable)
     .where(eq(appsTable.id, id))
     .limit(1);
+
   if (!app) {
     throw new Error("App not found");
   }
+
   const appInfo = app[0];
 
   const messages = await db

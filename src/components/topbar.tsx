@@ -21,7 +21,7 @@ export function TopBar({
       </Link>
       <a target="_blank" href={codeServerUrl}>
         <Button size="sm" variant={"outline"}>
-          <img src="/vscode-logo.svg" className="h-4 w-4" />
+          {/* <img src="/vscode-logo.svg" className="h-4 w-4" /> */}
           VS Code
           <ArrowUpRightIcon />
         </Button>
