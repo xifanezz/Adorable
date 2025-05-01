@@ -38,11 +38,11 @@ export function PromptInputBasic({
         onValueChange={(value) => onValueChange?.(value)}
         isLoading={isLoading}
         onSubmit={() => handleSubmit?.()}
-        className="w-full border border-gray-300 shadow-sm rounded-lg focus-within:border-gray-400 focus-within:ring-1 focus-within:ring-gray-200 transition-all duration-200 ease-in-out"
+        className="w-full border dark:bg-accent shadow-sm rounded-lg border-gray-300focus-within:border-gray-400 focus-within:ring-1 transition-all duration-200 ease-in-out focus-within:ring-gray-200 border-gray-300"
       >
         <PromptInputTextarea
           placeholder="Type your message here..."
-          className="pr-10"
+          className="pr-10 bg-transparent dark:bg-transparent"
         />
       </PromptInput>
       <div className="absolute right-3 bottom-3">

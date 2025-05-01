@@ -80,7 +80,7 @@ export default function Chat(props: {
           ))}
         </ChatContainer>
       </div>
-      <div className="p-3 sticky bottom-0 transition-all bg-background dark:bg-gray-900/80 backdrop-blur-sm z-10">
+      <div className="p-3 sticky bottom-0 transition-all bg-background backdrop-blur-sm z-10">
         <PromptInputBasic
           input={input || ""}
           onSubmit={onSubmit}
@@ -98,7 +98,7 @@ function MessageBody({ message }: { message: Message }) {
   if (message.role === "user") {
     return (
       <div className="flex justify-end py-1 mb-4">
-        <div className="bg-gray-200 rounded-xl px-4 py-1 max-w-[80%] ml-auto">
+        <div className="bg-accent rounded-xl px-4 py-1 max-w-[80%] ml-auto">
           {message.content}
         </div>
       </div>

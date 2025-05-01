@@ -16,6 +16,10 @@ import { ExampleButton } from "@/components/ExampleButton";
 import { unstable_ViewTransition as ViewTransition } from "react";
 import { UserButton } from "@stackframe/stack";
 import { ModeToggle } from "@/components/theme-provider";
+import { UserApps } from "@/components/user-apps";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient();
 
 export default function Home() {
   const [prompt, setPrompt] = useState("");
@@ -113,110 +117,117 @@ export default function Home() {
 
   return (
     <ViewTransition>
-      <main className="min-h-screen p-4 relative">
-        <div className="flex w-full justify-between items-center">
-          <h1 className="text-xl">
-            <span className="font-bold">Adorable</span>{" "}
-            <a className="" href="https://www.freestyle.sh">
-              by freestyle.sh
-            </a>
-          </h1>
-          <div className="flex items-center gap-2">
-            <ModeToggle />
-            <UserButton />
-          </div>
-        </div>
-
-        <div className="w-full max-w-lg px-4 sm:px-0 mx-auto flex flex-col items-center mt-40">
-          <div className="w-32 h-32 mb-2">
+      <QueryClientProvider client={queryClient}>
+        <main className="min-h-screen p-4 relative">
+          <div className="flex w-full justify-between items-center">
+            <h1 className="text-lg font-bold w-80">
+              <a href="https://www.freestyle.sh">freestyle.sh</a>
+            </h1>
             <Image
               className="dark:invert"
               src={LogoSvg}
               alt="Adorable Logo"
-              width={128}
-              height={128}
+              width={36}
+              height={36}
             />
+            <div className="flex items-center gap-2 w-80 justify-end">
+              <ModeToggle />
+              <UserButton />
+            </div>
           </div>
 
-          <p className="text-lg sm:text-xl md:text-2xl text-neutral-600 text-center mb-6">
-            <a
-              href="https://github.com/freestyle-sh/adorable"
-              className="rounded inline-block px-2 underline"
-            >
-              Open Source
-            </a>
-            AI App Builder
-          </p>
+          <div className="w-full max-w-lg px-4 sm:px-0 mx-auto flex flex-col items-center mt-32">
+            <p className="text-neutral-600 text-center mb-6 text-5xl font-bold">
+              Let AI Cook
+            </p>
 
-          <div className="w-full relative my-5">
-            <div className="relative w-full max-w-full overflow-hidden">
-              <div className="w-full bg-accent rounded-md relative z-10 border transition-colors">
-                <PromptInput
-                  leftSlot={
-                    <FrameworkSelector
-                      value={framework}
-                      onChange={setFramework}
+            <div className="w-full relative my-5">
+              <div className="relative w-full max-w-full overflow-hidden">
+                <div className="w-full bg-accent rounded-md relative z-10 border transition-colors">
+                  <PromptInput
+                    leftSlot={
+                      <FrameworkSelector
+                        value={framework}
+                        onChange={setFramework}
+                      />
+                    }
+                    isLoading={isLoading}
+                    value={prompt}
+                    onValueChange={setPrompt}
+                    onSubmit={handleSubmit}
+                    className="relative z-10 border-none bg-transparent shadow-none focus-within:border-gray-400 focus-within:ring-1 focus-within:ring-gray-200 transition-all duration-200 ease-in-out "
+                  >
+                    <PromptInputTextarea
+                      ref={placeholderRef}
+                      placeholder={placeholderText ?? fullPlaceholder}
+                      className="min-h-[100px] w-full bg-transparent dark:bg-transparent backdrop-blur-sm pr-12"
+                      onBlur={() => {}}
                     />
-                  }
-                  isLoading={isLoading}
-                  value={prompt}
-                  onValueChange={setPrompt}
-                  onSubmit={handleSubmit}
-                  className="relative z-10 border-none bg-transparent shadow-none focus-within:border-gray-400 focus-within:ring-1 focus-within:ring-gray-200 transition-all duration-200 ease-in-out "
-                >
-                  <PromptInputTextarea
-                    ref={placeholderRef}
-                    placeholder={placeholderText ?? fullPlaceholder}
-                    className="min-h-[100px] w-full bg-transparent dark:bg-transparent backdrop-blur-sm pr-12"
-                    onBlur={() => {}}
-                  />
-                  <PromptInputActions>
-                    <Button
-                      variant={"ghost"}
-                      size="sm"
-                      onClick={handleSubmit}
-                      disabled={isLoading || !prompt.trim()}
-                      className="h-7"
-                    >
-                      Start Creating ⏎
-                    </Button>
-                  </PromptInputActions>
-                </PromptInput>
+                    <PromptInputActions>
+                      <Button
+                        variant={"ghost"}
+                        size="sm"
+                        onClick={handleSubmit}
+                        disabled={isLoading || !prompt.trim()}
+                        className="h-7"
+                      >
+                        Start Creating ⏎
+                      </Button>
+                    </PromptInputActions>
+                  </PromptInput>
+                </div>
               </div>
             </div>
-          </div>
-
-          <div className="mt-6">
-            <p className="text-center text-xs text-gray-500 mb-2">Examples</p>
-            <div className="flex flex-wrap justify-center gap-2">
-              <ExampleButton
-                text="Dog Food Marketplace"
-                promptText="Build a dog food marketplace where users can browse and purchase premium dog food."
-                onClick={(text) => {
-                  console.log("Example clicked:", text);
-                  setPrompt(text);
-                }}
-              />
-              <ExampleButton
-                text="Personal Website"
-                promptText="Create a personal website with portfolio, blog, and contact sections."
-                onClick={(text) => {
-                  console.log("Example clicked:", text);
-                  setPrompt(text);
-                }}
-              />
-              <ExampleButton
-                text="Burrito B2B SaaS"
-                promptText="Build a B2B SaaS for burrito shops to manage inventory, orders, and delivery logistics."
-                onClick={(text) => {
-                  console.log("Example clicked:", text);
-                  setPrompt(text);
-                }}
-              />
+            <Examples setPrompt={setPrompt} />
+            <div className="mt-8 mb-16">
+              <a className="bg-blue-500 text-white rounded-md px-4 py-2 mt-4 text-sm font-semibold hover:bg-blue-600 transition-colors duration-200 ease-in-out cursor-pointer w-72 text-center block">
+                <span className="block font-bold">
+                  By <span className="underline">freestyle.sh</span>
+                </span>
+                <span className="text-xs">
+                  JavaScript infrastructure for AI.
+                </span>
+              </a>
             </div>
           </div>
-        </div>
-      </main>
+          <div className="mt-8 border-t py-8 -mx-4">
+            <UserApps />
+          </div>
+        </main>
+      </QueryClientProvider>
     </ViewTransition>
+  );
+}
+
+function Examples({ setPrompt }: { setPrompt: (text: string) => void }) {
+  return (
+    <div className="mt-2">
+      <div className="flex flex-wrap justify-center gap-2">
+        <ExampleButton
+          text="Dog Food Marketplace"
+          promptText="Build a dog food marketplace where users can browse and purchase premium dog food."
+          onClick={(text) => {
+            console.log("Example clicked:", text);
+            setPrompt(text);
+          }}
+        />
+        <ExampleButton
+          text="Personal Website"
+          promptText="Create a personal website with portfolio, blog, and contact sections."
+          onClick={(text) => {
+            console.log("Example clicked:", text);
+            setPrompt(text);
+          }}
+        />
+        <ExampleButton
+          text="Burrito B2B SaaS"
+          promptText="Build a B2B SaaS for burrito shops to manage inventory, orders, and delivery logistics."
+          onClick={(text) => {
+            console.log("Example clicked:", text);
+            setPrompt(text);
+          }}
+        />
+      </div>
+    </div>
   );
 }
