@@ -156,7 +156,7 @@ function ToolBlock(props: {
       <div className="flex py-1">
         <div
           className={cn(
-            "text-sm  px-2 mt-2 py-1 rounded max-h-24 overflow-scroll max-w-sm transition-colors",
+            "text-sm  px-2 mt-2 py-1 rounded max-h-24 overflow-scroll max-w-sm transition-colors duration-500",
             props.toolInvocation?.state !== "result"
               ? "border border-gray-800 animate-pulse bg-gray-800 text-white"
               : "border border-neutral-500 text-neutral-500 bg-transparent"
