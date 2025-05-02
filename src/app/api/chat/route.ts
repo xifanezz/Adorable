@@ -48,6 +48,7 @@ export async function POST(req: Request) {
     // },
     onStepFinish: async (step) => {
       console.log(util.inspect({
+        finishReason: step.finishReason,
         stepType: step.stepType,
         text: step.text,
         toolCalls: step.toolCalls,
@@ -57,10 +58,14 @@ export async function POST(req: Request) {
         colors: true,
       }));
     },
-    maxSteps: 20,
+    onError: async (error) => {
+      console.error("Error in tool call:", error);
+    },
+    maxSteps: 100,
     experimental_generateMessageId: createIdGenerator({
       prefix: "server-",
     }),
+    maxRetries: 3,
     toolCallStreaming: true,
     onFinish: async ({ response }) => {
       await saveResponseMessages({

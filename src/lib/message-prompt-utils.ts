@@ -1,12 +1,13 @@
 import { Message } from "ai";
 
+// Number of recent messages to keep intact
+const keepIntact = 2;
+
 /**
  * Non-destructively truncates file contents in tool calls and results to reduce token usage
  * Returns a new array of messages with truncated content while preserving the originals
  */
 export function truncateFileToolCalls(messages: Message[]): Message[] {
-    // Skip the most recent messages (keep them intact)
-    const keepIntact = 2; // Keep the last 2 messages intact
     const messagesToProcess = messages.slice(0, -keepIntact);
     const messagesToKeep = messages.slice(-keepIntact);
 
@@ -26,7 +27,10 @@ export function truncateFileToolCalls(messages: Message[]): Message[] {
                 if (part.type !== "tool-invocation") continue;
 
                 const toolInvocation = part.toolInvocation;
-                const toolName = toolInvocation.toolName;
+                // Handle both name and toolName (for compatibility)
+                const toolName = toolInvocation.toolName || toolInvocation.name;
+
+                if (!toolName) continue;
 
                 // Handle tool calls with file content
                 if (toolName === "read_file" || toolName === "read_multiple_files") {

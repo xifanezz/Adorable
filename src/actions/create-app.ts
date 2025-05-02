@@ -5,7 +5,6 @@ import { appsTable, appUsers, messagesTable } from "@/db/schema";
 import { db } from "@/lib/db";
 import { freestyle } from "@/lib/freestyle";
 
-
 export async function createApp({
   initialMessage,
   baseId,
@@ -22,7 +21,7 @@ export async function createApp({
       public: true,
       source: {
         url: {
-          "nextjs-dkjfgdf": "https://github.com/freestyle-sh/freestyle-next",
+          "nextjs-dkjfgdf": "https://github.com/freestyle-sh/freestyle-base-nextjs-shadcn",
           "vite-skdjfls": "https://github.com/freestyle-sh/freestyle-base-vite-react-typescript-swc",
           "expo-lksadfp": "https://github.com/freestyle-sh/freestyle-expo",
         }[baseId] ?? "https://github.com/freestyle-sh/freestyle-next",

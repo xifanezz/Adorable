@@ -14,6 +14,7 @@ export default function Chat(props: {
   initialMessages: Message[];
   respond?: boolean;
   isLoading?: boolean;
+  topBar?: React.ReactNode;
 }) {
   const hasResponded = useRef(false);
   const router = useRouter();
@@ -72,7 +73,8 @@ export default function Chat(props: {
   });
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-screen">
+      {props.topBar}
       <div className="flex-1 overflow-y-auto flex flex-col space-y-6">
         <ChatContainer autoScroll>
           {messages.map((message) => (
@@ -80,7 +82,7 @@ export default function Chat(props: {
           ))}
         </ChatContainer>
       </div>
-      <div className="p-3 sticky bottom-0 transition-all bg-background backdrop-blur-sm z-10">
+      <div className="p-3 transition-all bg-background backdrop-blur-sm z-10">
         <PromptInputBasic
           input={input || ""}
           onSubmit={onSubmit}

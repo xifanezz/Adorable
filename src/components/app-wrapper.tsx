@@ -43,9 +43,11 @@ export default function AppWrapper({
     <RepoContext.Provider value={repoId}>
       <div className="h-screen grid grid-cols-1">
         <div className="grid grid-cols-[1fr_2fr] overflow-hidden">
-          <div className="h-screen overflow-auto">
-            <TopBar appName={appName} codeServerUrl={codeServerUrl} />
+          <div className="h-screen overflow-hidden">
             <Chat
+              topBar={
+                <TopBar appName={appName} codeServerUrl={codeServerUrl} />
+              }
               appId={appId}
               initialMessages={initialMessages}
               respond={respond}
