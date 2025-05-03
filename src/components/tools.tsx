@@ -1,7 +1,9 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { ToolInvocation } from "ai";
+import { tool, ToolInvocation } from "ai";
+import { useEffect, useState } from "react";
+import { CodeBlock, CodeBlockCode } from "./ui/code-block";
 
 export function ToolMessage({
   toolInvocation,
@@ -9,7 +11,7 @@ export function ToolMessage({
   toolInvocation: ToolInvocation;
   className?: string;
 }) {
-  if (toolInvocation.toolName === "list_directory") {
+  if (toolInvocation.toolName === "dev_server_list_directory") {
     return (
       <ToolBlock
         name="listing directory"
@@ -19,7 +21,7 @@ export function ToolMessage({
     );
   }
 
-  if (toolInvocation.toolName === "read_file") {
+  if (toolInvocation.toolName === "dev_server_read_file") {
     return (
       <ToolBlock
         name="read file"
@@ -29,15 +31,15 @@ export function ToolMessage({
     );
   }
 
-  if (toolInvocation.toolName === "edit_file") {
+  if (toolInvocation.toolName === "dev_server_edit_file") {
     return <EditFileTool toolInvocation={toolInvocation} />;
   }
 
-  if (toolInvocation.toolName === "write_file") {
+  if (toolInvocation.toolName === "dev_server_write_file") {
     return <WriteFileTool toolInvocation={toolInvocation} />;
   }
 
-  if (toolInvocation.toolName === "exec") {
+  if (toolInvocation.toolName === "dev_server_exec") {
     return (
       <ToolBlock
         name="exec"
@@ -47,7 +49,7 @@ export function ToolMessage({
     );
   }
 
-  if (toolInvocation.toolName === "create_directory") {
+  if (toolInvocation.toolName === "dev_server_create_directory") {
     return (
       <ToolBlock
         name="create directory"
@@ -99,31 +101,50 @@ function EditFileTool({ toolInvocation }: { toolInvocation: ToolInvocation }) {
       argsText={toolInvocation.args?.path?.split("/").slice(2).join("/")}
       toolInvocation={toolInvocation}
     >
-      {/* <div className="grid gap-2">
+      <div className="grid gap-2">
         {toolInvocation.args?.edits?.map(
-          (edit: { newText: string; oldText: string }, index: number) => (
-            <div key={index} className="rounded overflow-hidden">
-              <div className="bg-red-200 font-mono text-xs whitespace-pre-wrap pl-2">
-                {edit?.oldText
-                  ?.split("\n")
-                  .map((line) => "- " + line)
-                  .join("\n")
-                  .slice(edit.oldText.length > 5 ? -5 : 0)}
-              </div>
-              <div className="bg-green-200 font-mono text-xs whitespace-pre-wrap pl-2">
-                {edit?.newText
-                  ?.split("\n")
-                  .map((line) => "+ " + line)
-                  .join("\n")
-                  .slice(edit.newText.length > 5 ? -5 : 0)}
-              </div>
-            </div>
-          )
+          (edit: { newText: string; oldText: string }, index: number) =>
+            (edit.oldText || edit.newText) && (
+              <CodeBlock key={index} className="overflow-scroll">
+                <CodeBlockCode
+                  code={edit.oldText
+                    ?.split("\n")
+                    .map((line) => "- " + line)
+                    .join("\n")}
+                  language={"tsx"}
+                  className="col-start-1 col-end-1 row-start-1 row-end-1 overflow-visible [&>pre]:pb-0! [&_code]:bg-red-200! bg-red-200"
+                />
+                <CodeBlockCode
+                  code={edit.newText
+                    ?.trimEnd()
+                    ?.split("\n")
+                    .map((line) => "  " + line)
+                    .join("\n")}
+                  language={"tsx"}
+                  className="col-start-1 col-end-1 row-start-1 row-end-1 overflow-visible [&>pre]:pt-0!"
+                />
+              </CodeBlock>
+            )
         )}
-      </div> */}
+      </div>
     </ToolBlock>
   );
 }
+
+// function StreamLines({ text }: { text: string }) {
+//   const [lines, setLines] = useState<string[]>(text.split("\n"));
+
+//   // useEffect(() => {
+//   //   const newLines = text.split("\n");
+//   //   setLines();
+//   // }, [text]);
+
+//   return (
+//     <div className="bg-green-200 font-mono text-xs whitespace-pre-wrap pl-2">
+//       {lines.join("\n")}
+//     </div>
+//   );
+// }
 
 function WriteFileTool({ toolInvocation }: { toolInvocation: ToolInvocation }) {
   return (
@@ -132,15 +153,24 @@ function WriteFileTool({ toolInvocation }: { toolInvocation: ToolInvocation }) {
       argsText={toolInvocation.args?.path?.split("/").slice(2).join("/")}
       toolInvocation={toolInvocation}
     >
-      {/* <div className="rounded overflow-hidden">
-        <div className="bg-green-200 font-mono text-xs whitespace-pre-wrap pl-2">
+      {toolInvocation.args?.content && toolInvocation.state !== "result" && (
+        <CodeBlock className="overflow-scroll sticky bottom-0">
+          <CodeBlockCode
+            code={toolInvocation.args?.content ?? ""}
+            language={"tsx"}
+            className="col-start-1 col-end-1 row-start-1 row-end-1 overflow-visible"
+          />
+        </CodeBlock>
+      )}
+      {/* <div className="rounded overflow-hidden"> */}
+      {/* <div className="bg-green-200 font-mono text-xs whitespace-pre-wrap pl-2">
           {toolInvocation.args?.content
             ?.split("\n")
             .map((line: string) => "+ " + line)
             .slice(toolInvocation.args?.content > 5 ? -5 : 0)
             .join("\n")}
-        </div>
-      </div> */}
+        </div> */}
+      {/* </div> */}
     </ToolBlock>
   );
 }

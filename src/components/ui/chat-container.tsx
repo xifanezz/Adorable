@@ -20,7 +20,7 @@ const useAutoScroll = (
   }, []);
 
   const scrollToBottom = useCallback(
-    (behavior: ScrollBehavior = "smooth") => {
+    (behavior: ScrollBehavior = "instant") => {
       const container = containerRef.current;
       if (!container) return;
 
@@ -197,7 +197,7 @@ function ChatContainer({
 
     const scrollHandler = () => {
       if (newMessageAdded) {
-        scrollToBottom("smooth");
+        scrollToBottom("instant");
         setNewMessageAdded(false);
         contentChangedWithoutNewMessageRef.current = false;
       } else if (
@@ -206,7 +206,7 @@ function ChatContainer({
         !isScrolling &&
         !scrollTriggered
       ) {
-        scrollToBottom("smooth");
+        scrollToBottom("instant");
         contentChangedWithoutNewMessageRef.current = false;
       }
     };
@@ -225,7 +225,10 @@ function ChatContainer({
 
   return (
     <div
-      className={cn("flex flex-col overflow-y-auto h-full p-3", className)}
+      className={cn(
+        "flex flex-col overflow-y-auto h-full p-3", // Add more padding to accommodate code block
+        className
+      )}
       role="log"
       ref={chatContainerRef}
       {...props}
