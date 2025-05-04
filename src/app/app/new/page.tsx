@@ -16,7 +16,7 @@ export default async function AppPage({
     redirect(
       `/handler/sign-in?after_auth_return_to=${
         encodeURIComponent("/app/new?") + new URLSearchParams(search).toString()
-      }`
+      }`,
     );
   }
 

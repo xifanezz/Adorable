@@ -5,7 +5,7 @@ import { Children, useCallback, useEffect, useRef, useState } from "react";
 
 const useAutoScroll = (
   containerRef: React.RefObject<HTMLDivElement | null>,
-  enabled: boolean
+  enabled: boolean,
 ) => {
   const [autoScrollEnabled, setAutoScrollEnabled] = useState(true);
   const lastScrollTopRef = useRef(0);
@@ -66,7 +66,7 @@ const useAutoScroll = (
         // scrollend event not supported in this browser, fallback to requestAnimationFrame
       }
     },
-    [containerRef]
+    [containerRef],
   );
 
   useEffect(() => {
@@ -227,7 +227,7 @@ function ChatContainer({
     <div
       className={cn(
         "flex flex-col overflow-y-auto h-full p-3", // Add more padding to accommodate code block
-        className
+        className,
       )}
       role="log"
       ref={chatContainerRef}

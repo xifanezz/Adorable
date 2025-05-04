@@ -130,7 +130,7 @@ function MessageBody({ message }: { message: Message }) {
                   {part.toolInvocation.result?.content?.map(
                     (content: { type: "text"; text: string }, i: number) => (
                       <div key={i}>{content.text}</div>
-                    )
+                    ),
                   )}
                   {/* Unexpectedly failed while using tool{" "}
                   {part.toolInvocation.toolName}. Please try again. again. */}

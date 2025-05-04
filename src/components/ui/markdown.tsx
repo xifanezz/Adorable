@@ -36,7 +36,7 @@ const INITIAL_COMPONENTS: Partial<Components> = {
         <span
           className={cn(
             "bg-primary-foreground rounded-sm px-1 font-mono text-sm",
-            className
+            className,
           )}
           {...props}
         >
@@ -62,7 +62,7 @@ const INITIAL_COMPONENTS: Partial<Components> = {
       <a
         className={cn(
           "text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline underline-offset-2 transition-colors",
-          className
+          className,
         )}
         href={href}
         target="_blank"
@@ -116,7 +116,7 @@ const INITIAL_COMPONENTS: Partial<Components> = {
     <blockquote
       className={cn(
         "border-l-4 border-gray-300 dark:border-gray-700 pl-4 italic my-4 text-gray-700 dark:text-gray-300",
-        className
+        className,
       )}
       {...props}
     >
@@ -129,7 +129,7 @@ const INITIAL_COMPONENTS: Partial<Components> = {
       <table
         className={cn(
           "min-w-full divide-y divide-gray-300 dark:divide-gray-700",
-          className
+          className,
         )}
         {...props}
       >
@@ -138,19 +138,13 @@ const INITIAL_COMPONENTS: Partial<Components> = {
     </div>
   ),
   thead: ({ className, children, ...props }) => (
-    <thead
-      className={cn("bg-gray-100 dark:bg-gray-800", className)}
-      {...props}
-    >
+    <thead className={cn("bg-gray-100 dark:bg-gray-800", className)} {...props}>
       {children}
     </thead>
   ),
   tbody: ({ className, children, ...props }) => (
     <tbody
-      className={cn(
-        "divide-y divide-gray-200 dark:divide-gray-800",
-        className
-      )}
+      className={cn("divide-y divide-gray-200 dark:divide-gray-800", className)}
       {...props}
     >
       {children}
@@ -160,7 +154,7 @@ const INITIAL_COMPONENTS: Partial<Components> = {
     <tr
       className={cn(
         "transition-colors hover:bg-gray-50 dark:hover:bg-gray-800",
-        className
+        className,
       )}
       {...props}
     >
@@ -171,7 +165,7 @@ const INITIAL_COMPONENTS: Partial<Components> = {
     <th
       className={cn(
         "px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider",
-        className
+        className,
       )}
       {...props}
     >
@@ -182,7 +176,7 @@ const INITIAL_COMPONENTS: Partial<Components> = {
     <td
       className={cn(
         "px-4 py-3 text-sm text-gray-600 dark:text-gray-400",
-        className
+        className,
       )}
       {...props}
     >
@@ -222,7 +216,7 @@ const MemoizedMarkdownBlock = memo(
   },
   function propsAreEqual(prevProps, nextProps) {
     return prevProps.content === nextProps.content;
-  }
+  },
 );
 
 MemoizedMarkdownBlock.displayName = "MemoizedMarkdownBlock";

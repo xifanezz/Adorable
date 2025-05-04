@@ -20,7 +20,7 @@ export async function saveMessages({
         id: message.id,
         createdAt: new Date(message.createdAt as unknown as string),
         message,
-      }))
+      })),
     )
     .onConflictDoUpdate({
       target: messagesTable.id,

@@ -25,7 +25,9 @@ type PromptInputContextType = {
   disabled?: boolean;
 };
 
-const PromptInputContext = createContext<PromptInputContextType & { leftSlot?: React.ReactNode }>({
+const PromptInputContext = createContext<
+  PromptInputContextType & { leftSlot?: React.ReactNode }
+>({
   isLoading: false,
   value: "",
   setValue: () => {},
@@ -87,7 +89,7 @@ function PromptInput({
         <div
           className={cn(
             "border-input bg-gray-50 rounded-md border p-2",
-            className
+            className,
           )}
         >
           {children}
@@ -143,7 +145,7 @@ function PromptInputTextarea({
       onBlur={props.onBlur}
       className={cn(
         "text-primary min-h-[44px] w-full resize-none border-none bg-transparent shadow-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0",
-        className
+        className,
       )}
       rows={1}
       disabled={disabled}
@@ -160,15 +162,14 @@ function PromptInputActions({
   ...props
 }: PromptInputActionsProps) {
   const { leftSlot } = usePromptInput();
-  
+
   return (
-    <div className={cn("flex items-center justify-between w-full", className)} {...props}>
-      <div className="self-end pb-1">
-        {leftSlot}
-      </div>
-      <div className="flex items-center gap-2">
-        {children}
-      </div>
+    <div
+      className={cn("flex items-center justify-between w-full", className)}
+      {...props}
+    >
+      <div className="self-end pb-1">{leftSlot}</div>
+      <div className="flex items-center gap-2">{children}</div>
     </div>
   );
 }

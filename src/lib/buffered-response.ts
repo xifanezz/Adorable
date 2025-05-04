@@ -11,7 +11,7 @@ export function bufferedResponse(originalStream: ReadableStream<Uint8Array>) {
 
   // Process the buffer and send chunks with adaptive delays
   async function processBuffer(
-    controller: ReadableStreamDefaultController<Uint8Array>
+    controller: ReadableStreamDefaultController<Uint8Array>,
   ) {
     if (processingBuffer || chunkBuffer.length === 0) return;
 

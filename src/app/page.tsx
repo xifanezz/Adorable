@@ -62,7 +62,7 @@ export default function Home() {
           setPlaceholderText(
             fullPlaceholder +
               " " +
-              currentIdea.substring(0, currentCharIndex + 1)
+              currentIdea.substring(0, currentCharIndex + 1),
           );
           currentCharIndex++;
           typingTimer = setTimeout(typeNextCharacter, 100);
@@ -80,7 +80,9 @@ export default function Home() {
       const currentIdea = exampleIdeas[currentTextIndex];
       if (currentCharIndex > 0) {
         setPlaceholderText(
-          fullPlaceholder + " " + currentIdea.substring(0, currentCharIndex - 1)
+          fullPlaceholder +
+            " " +
+            currentIdea.substring(0, currentCharIndex - 1),
         );
         currentCharIndex--;
         typingTimer = setTimeout(eraseText, 50);
@@ -111,7 +113,7 @@ export default function Home() {
           vite: "vite-skdjfls",
           expo: "expo-lksadfp",
         }[framework]
-      }`
+      }`,
     );
   };
 
