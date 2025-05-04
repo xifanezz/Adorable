@@ -26,7 +26,6 @@ export function PromptInputBasic({
   disabled,
 }: PromptInputBasicProps) {
   const [isLoading, setIsLoading] = useState(false);
-  console.log("DISABLED?", disabled);
   useEffect(() => {
     setIsLoading(isGenerating);
   }, [isGenerating]);

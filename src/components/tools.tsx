@@ -11,7 +11,7 @@ export function ToolMessage({
   toolInvocation: ToolInvocation;
   className?: string;
 }) {
-  if (toolInvocation.toolName === "dev_server_list_directory") {
+  if (toolInvocation.toolName === "list_directory") {
     return (
       <ToolBlock
         name="listing directory"
@@ -21,7 +21,7 @@ export function ToolMessage({
     );
   }
 
-  if (toolInvocation.toolName === "dev_server_read_file") {
+  if (toolInvocation.toolName === "read_file") {
     return (
       <ToolBlock
         name="read file"
@@ -31,15 +31,15 @@ export function ToolMessage({
     );
   }
 
-  if (toolInvocation.toolName === "dev_server_edit_file") {
+  if (toolInvocation.toolName === "edit_file") {
     return <EditFileTool toolInvocation={toolInvocation} />;
   }
 
-  if (toolInvocation.toolName === "dev_server_write_file") {
+  if (toolInvocation.toolName === "write_file") {
     return <WriteFileTool toolInvocation={toolInvocation} />;
   }
 
-  if (toolInvocation.toolName === "dev_server_exec") {
+  if (toolInvocation.toolName === "exec") {
     return (
       <ToolBlock
         name="exec"
@@ -49,7 +49,7 @@ export function ToolMessage({
     );
   }
 
-  if (toolInvocation.toolName === "dev_server_create_directory") {
+  if (toolInvocation.toolName === "create_directory") {
     return (
       <ToolBlock
         name="create directory"

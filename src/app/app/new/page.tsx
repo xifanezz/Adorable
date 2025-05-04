@@ -25,5 +25,5 @@ export default async function AppPage({
     baseId: search.baseId as string,
   });
 
-  redirect(`/app/${id}?respond`);
+  redirect(`/app/${id}?unsentMessage=${search.message}`);
 }

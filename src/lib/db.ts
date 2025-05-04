@@ -56,7 +56,7 @@ export async function saveResponseMessages({
           content.result = {
             content: [{ type: "text", text: "unknown error" }],
             isError: true,
-          }
+          };
         }
       }
     }
