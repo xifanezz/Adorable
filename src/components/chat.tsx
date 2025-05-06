@@ -3,22 +3,19 @@
 import { useChat } from "@ai-sdk/react";
 import { PromptInputBasic } from "./chatinput";
 import { Markdown } from "./ui/markdown";
-import { ChangeEvent, useEffect, useRef } from "react";
+import { ChangeEvent, useEffect } from "react";
 import { ChatContainer } from "./ui/chat-container";
 import { Message } from "ai";
 import { ToolMessage } from "./tools";
-import { useRouter } from "next/navigation";
 
 export default function Chat(props: {
   appId: string;
   initialMessages: Message[];
-  respond?: boolean;
   isLoading?: boolean;
   topBar?: React.ReactNode;
+  unsentMessage?: string;
 }) {
-  const hasResponded = useRef(false);
-  const router = useRouter();
-  const { messages, handleSubmit, input, handleInputChange, status, reload } =
+  const { messages, handleSubmit, input, handleInputChange, status, append } =
     useChat({
       initialMessages: props.initialMessages,
       generateId: () => {
@@ -29,48 +26,47 @@ export default function Chat(props: {
         "Adorable-App-Id": props.appId,
       },
       api: "/api/chat",
+      experimental_prepareRequestBody: (request) => {
+        const lastMessage = request.messages.at(-1) ?? null;
+        return {
+          message: lastMessage,
+          threadId: props.appId,
+          resourceId: props.appId,
+        };
+      },
     });
 
-  // Create a wrapper for handleInputChange to match expected function signature
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const unsentMessageRaw = url.searchParams.get("unsentMessage");
+    url.searchParams.delete("unsentMessage");
+
+    const unsentMessage = unsentMessageRaw
+      ? decodeURIComponent(unsentMessageRaw)
+      : null;
+
+    if (unsentMessage) {
+      window.history.replaceState(undefined, "", url.toString());
+
+      append({
+        content: unsentMessage,
+        role: "user",
+      });
+    }
+  });
+
   const onValueChange = (value: string) => {
     handleInputChange({
       target: { value },
     } as ChangeEvent<HTMLTextAreaElement>);
   };
 
-  // Create a submission handler
   const onSubmit = (e?: Event) => {
     if (e?.preventDefault) {
       e.preventDefault();
     }
-    console.log("EVT", e);
-    console.log(JSON.stringify(e), e?.target);
     handleSubmit(e);
   };
-  // Use a ref to track if we've already sent the initial message
-
-  // Send initial message if provided and no messages are present
-  useEffect(() => {
-    console.log("Checking for initial message");
-    console.log(props.respond, messages);
-    if (
-      props.respond &&
-      messages.at(-1)?.role === "user" &&
-      !hasResponded.current
-    ) {
-      hasResponded.current = true;
-      console.log("Sending initial message");
-      handleSubmit();
-      reload();
-      router.push(`/app/${props.appId}`, {});
-    } else {
-      console.log(
-        "Not sending initial message",
-        messages.at(-1),
-        props.respond
-      );
-    }
-  });
 
   return (
     <div className="flex flex-col h-screen">
@@ -134,7 +130,7 @@ function MessageBody({ message }: { message: Message }) {
                   {part.toolInvocation.result?.content?.map(
                     (content: { type: "text"; text: string }, i: number) => (
                       <div key={i}>{content.text}</div>
-                    )
+                    ),
                   )}
                   {/* Unexpectedly failed while using tool{" "}
                   {part.toolInvocation.toolName}. Please try again. again. */}

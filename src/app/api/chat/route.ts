@@ -1,13 +1,10 @@
 import { getApp } from "@/actions/get-app";
-import { saveResponseMessages } from "@/lib/db";
 import { freestyle } from "@/lib/freestyle";
-import { repairBrokenMessages, truncateFileToolCalls } from "@/lib/message-prompt-utils";
-import { ANTHROPIC_MODEL } from "@/lib/model";
-import { SYSTEM_MESSAGE } from "@/lib/system";
-import { ADORABLE_TOOLS } from "@/lib/tools";
 import { getAppIdFromHeaders } from "@/lib/utils";
-import { createIdGenerator, Message, streamText } from "ai";
-import util from "node:util";
+import { MCPClient } from "@mastra/mcp";
+import { builderAgent } from "@/mastra/agents/builder";
+import { bufferedResponse } from "@/lib/buffered-response";
+import { CoreMessage } from "@mastra/core";
 
 export async function POST(req: Request) {
   const appId = getAppIdFromHeaders(req);
@@ -22,65 +19,42 @@ export async function POST(req: Request) {
   }
 
   const { mcpEphemeralUrl } = await freestyle.requestDevServer({
-    // repoUrl: "https://" + process.env.GIT_ROOT + "/" + app.info.gitRepo,
     repoId: app.info.gitRepo,
+    baseId: app.info.baseId,
   });
 
-  const { messages: originalMessages }: { id: string; messages: Array<Message> } =
-    await req.json();
+  const { message }: { message: CoreMessage } = await req.json();
 
-  // Truncate file-related tool calls to reduce token usage
-  const truncatedMessages = truncateFileToolCalls(originalMessages);
-
-  repairBrokenMessages(truncatedMessages);
-
-  const result = streamText({
-    tools: await ADORABLE_TOOLS({
-      mcpUrl: mcpEphemeralUrl,
-    }).then(tools => {
-      delete tools["directory_tree"];
-      return tools;
-    }),
-    // providerOptions: {
-    //   anthropic: {
-    //     thinking: { type: 'enabled', budgetTokens: 12000 },
-    //   } satisfies AnthropicProviderOptions,
-    // },
-    onStepFinish: async (step) => {
-      console.log(util.inspect({
-        finishReason: step.finishReason,
-        stepType: step.stepType,
-        text: step.text,
-        toolCalls: step.toolCalls,
-        toolResults: step.toolResults,
-      }, {
-        depth: 10,
-        colors: true,
-      }));
+  const mcp = new MCPClient({
+    id: crypto.randomUUID(),
+    servers: {
+      dev_server: {
+        url: new URL(mcpEphemeralUrl),
+      },
     },
-    onError: async (error) => {
-      console.error("Error in tool call:", error);
-    },
+  });
+
+  const toolsets = await mcp.getToolsets();
+
+  const stream = await builderAgent.stream(message.content, {
+    threadId: appId,
+    resourceId: appId,
     maxSteps: 100,
-    experimental_generateMessageId: createIdGenerator({
-      prefix: "server-",
-    }),
-    maxRetries: 3,
-    toolCallStreaming: true,
-    onFinish: async ({ response }) => {
-      await saveResponseMessages({
-        appId,
-        messages: originalMessages,
-        responseMessages: response.messages,
-      });
+    maxRetries: 0,
+    maxTokens: 64000,
+    // experimental_continueSteps: true,
+    toolsets,
+    onError: async (error) => {
+      await mcp.disconnect();
+      console.error("Error:", error);
     },
-    messages: truncatedMessages,
-    model: ANTHROPIC_MODEL,
-    system: SYSTEM_MESSAGE,
+    onFinish: async (res) => {
+      console.log(res);
+      console.log("Finished with reason:", res.finishReason);
+      await mcp.disconnect();
+    },
+    toolCallStreaming: true,
   });
 
-  result.consumeStream(); // keep going even if the client disconnects
-
-  return result.toDataStreamResponse();
+  return bufferedResponse(stream.toDataStream());
 }
-

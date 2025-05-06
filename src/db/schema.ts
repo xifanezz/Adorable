@@ -1,4 +1,11 @@
-import { pgTable, text, timestamp, uuid, json, pgEnum } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+  json,
+  pgEnum,
+} from "drizzle-orm/pg-core";
 
 import type { Message } from "ai";
 
@@ -11,7 +18,11 @@ export const appsTable = pgTable("apps", {
   baseId: text("base_id").notNull().default("nextjs-dkjfgdf"),
 });
 
-export const appPermissions = pgEnum("app_user_permission", ["read", "write", "admin"]);
+export const appPermissions = pgEnum("app_user_permission", [
+  "read",
+  "write",
+  "admin",
+]);
 
 export const appUsers = pgTable("app_users", {
   userId: text("user_id").notNull(),

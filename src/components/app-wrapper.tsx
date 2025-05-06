@@ -22,7 +22,6 @@ export default function AppWrapper({
   appName,
   repo,
   initialMessages,
-  respond,
   appId,
   repoId,
   baseId,
@@ -50,7 +49,6 @@ export default function AppWrapper({
               }
               appId={appId}
               initialMessages={initialMessages}
-              respond={respond}
             />
           </div>
 
