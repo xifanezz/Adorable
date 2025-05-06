@@ -1,8 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { tool, ToolInvocation } from "ai";
-import { useEffect, useState } from "react";
+import { ToolInvocation } from "ai";
 import { CodeBlock, CodeBlockCode } from "./ui/code-block";
 
 export function ToolMessage({
@@ -102,14 +101,14 @@ function EditFileTool({ toolInvocation }: { toolInvocation: ToolInvocation }) {
       toolInvocation={toolInvocation}
     >
       <div className="grid gap-2">
-        {toolInvocation.args?.edits?.map(
+        {toolInvocation.args?.edits?.map?.(
           (edit: { newText: string; oldText: string }, index: number) =>
             (edit.oldText || edit.newText) && (
               <CodeBlock key={index} className="overflow-scroll">
                 <CodeBlockCode
                   code={edit.oldText
                     ?.split("\n")
-                    .map((line) => "- " + line)
+                    .map?.((line) => "- " + line)
                     .join("\n")}
                   language={"tsx"}
                   className="col-start-1 col-end-1 row-start-1 row-end-1 overflow-visible [&>pre]:pb-0! [&_code]:bg-red-200! bg-red-200"
@@ -118,13 +117,13 @@ function EditFileTool({ toolInvocation }: { toolInvocation: ToolInvocation }) {
                   code={edit.newText
                     ?.trimEnd()
                     ?.split("\n")
-                    .map((line) => "  " + line)
+                    .map?.((line) => "  " + line)
                     .join("\n")}
                   language={"tsx"}
                   className="col-start-1 col-end-1 row-start-1 row-end-1 overflow-visible [&>pre]:pt-0!"
                 />
               </CodeBlock>
-            ),
+            )
         )}
       </div>
     </ToolBlock>
@@ -162,15 +161,6 @@ function WriteFileTool({ toolInvocation }: { toolInvocation: ToolInvocation }) {
           />
         </CodeBlock>
       )}
-      {/* <div className="rounded overflow-hidden"> */}
-      {/* <div className="bg-green-200 font-mono text-xs whitespace-pre-wrap pl-2">
-          {toolInvocation.args?.content
-            ?.split("\n")
-            .map((line: string) => "+ " + line)
-            .slice(toolInvocation.args?.content > 5 ? -5 : 0)
-            .join("\n")}
-        </div> */}
-      {/* </div> */}
     </ToolBlock>
   );
 }
@@ -189,13 +179,13 @@ function ToolBlock(props: {
             "text-sm  px-2 mt-2 py-1 rounded max-h-24 overflow-scroll max-w-sm transition-colors duration-500",
             props.toolInvocation?.state !== "result"
               ? "border border-gray-800 animate-pulse bg-gray-800 text-white"
-              : "border border-neutral-500 text-neutral-500 bg-transparent",
+              : "border border-neutral-500 text-neutral-500 bg-transparent"
           )}
         >
           <span className="font-bold">{props.name}</span>{" "}
           <span
             className={cn(
-              props.toolInvocation?.state !== "result" ? "text-gray-200" : "",
+              props.toolInvocation?.state !== "result" ? "text-gray-200" : ""
             )}
           >
             {props.argsText}

@@ -16,7 +16,7 @@ export function UserApps() {
         <Link href={`/app/${app.id}`} key={app.id} className="cursor-pointer">
           <Card className="p-4 border-b border rounded-md h-36">
             <CardHeader>
-              <CardTitle>{app.firstMessage?.content}</CardTitle>
+              <CardTitle>{app.name}</CardTitle>
               <CardDescription>
                 Created {new Date(app.createdAt).toLocaleDateString()}
               </CardDescription>

@@ -26,6 +26,7 @@ export async function POST(req: Request) {
   const { message }: { message: CoreMessage } = await req.json();
 
   const mcp = new MCPClient({
+    id: crypto.randomUUID(),
     servers: {
       dev_server: {
         url: new URL(mcpEphemeralUrl),
@@ -39,14 +40,17 @@ export async function POST(req: Request) {
     threadId: appId,
     resourceId: appId,
     maxSteps: 100,
-    maxRetries: 3,
-    experimental_continueSteps: true,
+    maxRetries: 0,
+    maxTokens: 64000,
+    // experimental_continueSteps: true,
     toolsets,
-    onError: (error) => {
+    onError: async (error) => {
+      await mcp.disconnect();
       console.error("Error:", error);
     },
-    onFinish: async ({ finishReason }) => {
-      console.log("Finished with reason:", finishReason);
+    onFinish: async (res) => {
+      console.log(res);
+      console.log("Finished with reason:", res.finishReason);
       await mcp.disconnect();
     },
     toolCallStreaming: true,

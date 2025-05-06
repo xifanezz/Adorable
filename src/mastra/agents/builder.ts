@@ -2,7 +2,7 @@ import { SYSTEM_MESSAGE } from "@/lib/system";
 import { anthropic } from "@ai-sdk/anthropic";
 import { Agent } from "@mastra/core/agent";
 import { Memory } from "@mastra/memory";
-import { TokenLimiter } from "@mastra/memory/processors";
+// import { TokenLimiter, ToolCallFilter } from "@mastra/memory/processors";
 import { PostgresStore, PgVector } from "@mastra/pg";
 
 export const memory = new Memory({
@@ -12,6 +12,10 @@ export const memory = new Memory({
     threads: {
       generateTitle: true,
     },
+    // workingMemory: {
+    //   enabled: true,
+    //   use: "tool-call",
+    // },
   },
   vector: new PgVector({
     connectionString: process.env.DATABASE_URL!,
@@ -19,7 +23,12 @@ export const memory = new Memory({
   storage: new PostgresStore({
     connectionString: process.env.DATABASE_URL!,
   }),
-  processors: [new TokenLimiter(64_000)],
+  processors: [
+    // new ToolCallFilter({
+    //   exclude: ["read_file", "read_multiple_files"],
+    // }),
+    // new TokenLimiter(100_000),
+  ],
 });
 
 export const builderAgent = new Agent({

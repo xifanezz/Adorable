@@ -72,6 +72,8 @@ export async function createApp({
       .insert(appsTable)
       .values({
         gitRepo: repo.repoId,
+        name: initialMessage,
+        baseId: baseId,
       })
       .returning();
 
