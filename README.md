@@ -60,13 +60,15 @@ Open-source version of [Lovable](https://lovable.dev) - an AI agent that can wri
    npx drizzle-kit push
    ```
 
-6. Run the development server:
+6. Set up [Stack Auth](https://stack-auth.com)
+
+7. Run the development server:
 
    ```bash
    npm run dev
    ```
 
-7. Open [http://localhost:3000](http://localhost:3000) in your browser.
+8. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Deployment
 
