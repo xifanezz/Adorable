@@ -57,9 +57,6 @@ export default async function AppPage({
         codeServerUrl={codeServerUrl}
         appName={app.info.name}
         initialMessages={uiMessages}
-        unsentMessage={
-          unsentMessage ? decodeURIComponent(unsentMessage) : undefined
-        }
         repo={app.info.gitRepo}
         appId={app.info.id}
         repoId={app.info.gitRepo}
