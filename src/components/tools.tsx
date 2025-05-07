@@ -161,7 +161,10 @@ function WriteFileTool({ toolInvocation }: { toolInvocation: ToolInvocation }) {
     >
       <CodeBlock className="overflow-scroll sticky bottom-0">
         <CodeBlockCode
-          code={toolInvocation.args?.content?.split("\n").slice(0, 5) ?? ""}
+          code={
+            toolInvocation.args?.content?.split("\n").slice(0, 5).join("\n") ??
+            ""
+          }
           language={"tsx"}
           className="col-start-1 col-end-1 row-start-1 row-end-1 overflow-visible [&_code]:bg-green-200! bg-green-200 [&>pre]:py-0!"
         />
