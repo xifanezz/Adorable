@@ -36,16 +36,12 @@ export async function createApp({
       console.error("Error creating git repository:", JSON.stringify(e));
       throw new Error("Failed to create git repository");
     });
-
   await freestyle.grantGitPermission({
     identityId: user.freestyleIdentity,
     repoId: repo.repoId,
     permission: "write",
   });
-
   console.timeEnd("create git repo");
-
-  console.time("start dev server");
 
   // remapping baseIds because we don't have base image for expo yet
   const BASE_IDS = {
@@ -54,14 +50,12 @@ export async function createApp({
     "expo-lksadfp": "vite-skdjfls",
   };
 
-  await freestyle
-    .requestDevServer({
-      repoId: repo.repoId,
-      baseId: BASE_IDS[baseId],
-    })
-    .then(() => {
-      console.timeEnd("start dev server");
-    });
+  console.time("start dev server");
+  await freestyle.requestDevServer({
+    repoId: repo.repoId,
+    baseId: BASE_IDS[baseId],
+  });
+  console.timeEnd("start dev server");
 
   const token = await freestyle.createGitAccessToken({
     identityId: user.freestyleIdentity,
@@ -96,8 +90,6 @@ export async function createApp({
     threadId: app.id,
     resourceId: app.id,
   });
-
-  console.timeEnd("insert initial message");
 
   return app;
 }

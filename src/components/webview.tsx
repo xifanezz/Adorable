@@ -2,16 +2,34 @@
 
 import { requestDevServer as requestDevServerInner } from "./webview-actions";
 import "./loader.css";
-import { FreestyleDevServer } from "freestyle-sandboxes/react/dev-server";
+import {
+  FreestyleDevServer,
+  FreestyleDevServerHandle,
+} from "freestyle-sandboxes/react/dev-server";
+import { useRef } from "react";
+import { Button } from "./ui/button";
+import { RefreshCwIcon } from "lucide-react";
 
 export default function WebView(props: { repo: string; baseId: string }) {
   function requestDevServer({ repoId }: { repoId: string }) {
     return requestDevServerInner({ repoId, baseId: props.baseId });
   }
 
+  const devServerRef = useRef<FreestyleDevServerHandle>(null);
+
   return (
-    <div className="flex flex-col h-full overflow-hidden border-l transition-opacity duration-700">
+    <div className="flex flex-col h-full overflow-hidden border-l transition-opacity duration-700 mt-px">
+      <div className="h-12 border-b border-gray-200 items-center flex px-2 bg-background sticky top-0 justify-end">
+        <Button
+          variant={"ghost"}
+          size={"icon"}
+          onClick={() => devServerRef.current?.refresh()}
+        >
+          <RefreshCwIcon />
+        </Button>
+      </div>
       <FreestyleDevServer
+        ref={devServerRef}
         actions={{ requestDevServer }}
         repoId={props.repo}
         loadingComponent={({ iframeLoading }) => (

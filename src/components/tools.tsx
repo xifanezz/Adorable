@@ -104,24 +104,31 @@ function EditFileTool({ toolInvocation }: { toolInvocation: ToolInvocation }) {
         {toolInvocation.args?.edits?.map?.(
           (edit: { newText: string; oldText: string }, index: number) =>
             (edit.oldText || edit.newText) && (
-              <CodeBlock key={index} className="overflow-scroll">
+              <CodeBlock key={index} className="overflow-scroll py-2">
                 <CodeBlockCode
-                  code={edit.oldText
-                    ?.split("\n")
-                    .map?.((line) => "- " + line)
-                    .join("\n")}
+                  code={edit.oldText?.split("\n").slice(0, 5).join("\n")}
                   language={"tsx"}
-                  className="col-start-1 col-end-1 row-start-1 row-end-1 overflow-visible [&>pre]:pb-0! [&_code]:bg-red-200! bg-red-200"
+                  className="col-start-1 col-end-1 row-start-1 row-end-1 overflow-visible [&>pre]:py-0! [&_code]:bg-red-200! bg-red-200"
                 />
+                {edit.oldText?.split("\n").length > 5 && (
+                  <div className="text-red-700 px-4 text-xs font-mono">
+                    +{edit.oldText?.split("\n").length - 5} more
+                  </div>
+                )}
                 <CodeBlockCode
                   code={edit.newText
                     ?.trimEnd()
                     ?.split("\n")
-                    .map?.((line) => "  " + line)
+                    .slice(0, 5)
                     .join("\n")}
                   language={"tsx"}
-                  className="col-start-1 col-end-1 row-start-1 row-end-1 overflow-visible [&>pre]:pt-0!"
+                  className="col-start-1 col-end-1 row-start-1 row-end-1 overflow-visible [&>pre]:py-0! [&_code]:bg-green-200! bg-green-200"
                 />
+                {edit.newText?.split("\n").length > 5 && (
+                  <div className="text-green-700 px-4 text-xs font-mono">
+                    +{edit.newText?.split("\n").length - 5} more
+                  </div>
+                )}
               </CodeBlock>
             )
         )}
@@ -152,15 +159,18 @@ function WriteFileTool({ toolInvocation }: { toolInvocation: ToolInvocation }) {
       argsText={toolInvocation.args?.path?.split("/").slice(2).join("/")}
       toolInvocation={toolInvocation}
     >
-      {toolInvocation.args?.content && toolInvocation.state !== "result" && (
-        <CodeBlock className="overflow-scroll sticky bottom-0">
-          <CodeBlockCode
-            code={toolInvocation.args?.content ?? ""}
-            language={"tsx"}
-            className="col-start-1 col-end-1 row-start-1 row-end-1 overflow-visible"
-          />
-        </CodeBlock>
-      )}
+      <CodeBlock className="overflow-scroll sticky bottom-0">
+        <CodeBlockCode
+          code={toolInvocation.args?.content?.split("\n").slice(0, 5) ?? ""}
+          language={"tsx"}
+          className="col-start-1 col-end-1 row-start-1 row-end-1 overflow-visible [&_code]:bg-green-200! bg-green-200 [&>pre]:py-0!"
+        />
+        {toolInvocation.args?.content?.split("\n").length > 5 && (
+          <div className="text-green-700 px-4 text-xs pb-2 font-mono">
+            +{toolInvocation.args?.content?.split("\n").length - 5} more
+          </div>
+        )}
+      </CodeBlock>
     </ToolBlock>
   );
 }
