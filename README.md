@@ -50,8 +50,6 @@ Open-source version of [Lovable](https://lovable.dev) - an AI agent that can wri
 
    # Freestyle API
    FREESTYLE_API_KEY=your_freestyle_api_key
-    
-   GIT_ROOT=https://git.freestyle.sh
    ```
 
 5. Initialize the database:
@@ -61,6 +59,16 @@ Open-source version of [Lovable](https://lovable.dev) - an AI agent that can wri
    ```
 
 6. Set up [Stack Auth](https://stack-auth.com)
+
+Go to the [Stack Auth dashboard](https://app.stack-auth.com) and create a new application. In Configuration > Domains, enable `Allow all localhost callbacks for development` to be able to sign in locally.
+
+You'll need to add the following environment variables to your `.env` file:
+
+```env
+NEXT_PUBLIC_STACK_PROJECT_ID=<your-project-id>
+NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY=<your-publishable-client-key>
+STACK_SECRET_SERVER_KEY=<your-secret-server-key>
+```
 
 7. Run the development server:
 
@@ -84,4 +92,3 @@ Or use the included deployment script:
 ```bash
 ./deploy.sh
 ```
-
