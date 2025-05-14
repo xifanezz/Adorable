@@ -44,3 +44,22 @@ export const messagesTable = pgTable("messages", {
     .references(() => appsTable.id),
   message: json("message").notNull().$type<Message>(),
 });
+
+export const appDeployments = pgTable("app_deployments", {
+  appId: uuid("app_id")
+    .notNull()
+    .references(() => appsTable.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  deploymentUrl: text("deployment_url").notNull().primaryKey(),
+  deploymentId: text("deployment_id").notNull(),
+  commit: text("commit").notNull(), // sha of the commit
+});
+
+export const appDomains = pgTable("app_domains", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  appId: uuid("app_id")
+    .notNull()
+    .references(() => appsTable.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  domain: text("domain").notNull(),
+});
