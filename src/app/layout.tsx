@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { stackServerApp } from "@/auth/stack-auth";
 import { ThemeProvider } from "@/components/theme-provider";
+import Head from "next/head";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,7 +18,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Adorable",
-  description: "A blank Next.js template",
+  description: "Open Source AI App Builder",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
