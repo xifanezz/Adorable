@@ -3,7 +3,7 @@
 import { getUser } from "@/auth/stack-auth";
 import { appsTable, appUsers } from "@/db/schema";
 import { db } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 
 export async function getUserApps() {
   const user = await getUser();
@@ -19,7 +19,8 @@ export async function getUserApps() {
     })
     .from(appUsers)
     .innerJoin(appsTable, eq(appUsers.appId, appsTable.id))
-    .where(eq(appUsers.userId, user.userId));
+    .where(eq(appUsers.userId, user.userId))
+    .orderBy(desc(appsTable.createdAt));
 
   return userApps;
 }
