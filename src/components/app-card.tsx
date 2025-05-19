@@ -19,6 +19,7 @@ import {
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { deleteApp } from "@/actions/delete-app";
+import { toast } from "sonner";
 
 type AppCardProps = {
   id: string;
@@ -39,11 +40,11 @@ export function AppCard({ id, name, createdAt, onDelete }: AppCardProps) {
   const handleDelete = async (e: React.MouseEvent) => {
     e.preventDefault();
     await deleteApp(id);
-    
+    toast.success("App deleted successfully");
     if (onDelete) {
       onDelete();
     }
-    
+
     console.log(`Delete app: ${id}`);
   };
 
