@@ -7,4 +7,4 @@ cp .env.production .next/standalone/.env.production
 cp .env .next/standalone/.env
 
 cd .next/standalone
-npx freestyle deploy --web server.js --domain adorable.dev
+npx freestyle deploy --web server.js --domain adorable.dev --timeout 360

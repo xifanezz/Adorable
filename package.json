@@ -68,7 +68,7 @@
     "drizzle-kit": "^0.31.0",
     "eslint": "^9",
     "eslint-config-next": "15.3.0",
-    "freestyle-sh": "^0.4.26",
+    "freestyle-sh": "^0.4.31",
     "tailwindcss": "^4.1.3",
     "tsx": "^4.19.3",
     "typescript": "^5"
