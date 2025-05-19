@@ -48,12 +48,6 @@ export function AppCard({ id, name, createdAt, onDelete }: AppCardProps) {
     console.log(`Delete app: ${id}`);
   };
 
-  const handleFork = (e: React.MouseEvent) => {
-    e.preventDefault();
-    // TODO: Implement fork functionality
-    console.log(`Fork app: ${id}`);
-  };
-
   return (
     <Card className="p-4 border-b border rounded-md h-36 relative">
       <Link href={`/app/${id}`} className="cursor-pointer block">
@@ -77,10 +71,7 @@ export function AppCard({ id, name, createdAt, onDelete }: AppCardProps) {
               <ExternalLink className="mr-2 h-4 w-4" />
               Open
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleFork}>
-              <GitForkIcon className="mr-2 h-4 w-4" />
-              Fork
-            </DropdownMenuItem>
+
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={handleDelete}
