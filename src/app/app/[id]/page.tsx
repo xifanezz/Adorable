@@ -50,6 +50,9 @@ export default async function AppPage({
     baseId: app?.info.baseId,
   });
 
+  // Use the previewDomain from the database, or fall back to a generated domain
+  const domain = app.info.previewDomain;
+
   return (
     <ViewTransition>
       <AppWrapper
@@ -60,6 +63,7 @@ export default async function AppPage({
         repo={app.info.gitRepo}
         appId={app.info.id}
         repoId={app.info.gitRepo}
+        domain={domain}
       />
     </ViewTransition>
   );

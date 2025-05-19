@@ -70,13 +70,23 @@ NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY=<your-publishable-client-key>
 STACK_SECRET_SERVER_KEY=<your-secret-server-key>
 ```
 
-7. Run the development server:
+7. Add a Preview Domain (optional)
+
+Go to the [Freestyle dashboard](https://admin.freestyle.sh/dashboard/domains) and verify a new domain. Then follow the [DNS Instructions](https://docs.freestyle.sh/Getting-Started/deploy-to-custom-domain#all-subdomains-of-a-domain) to point your domain to Freestyle.
+
+Finally, add the following environment variable to your `.env` file:
+
+```env
+PREVIEW_DOMAIN=<your-domain> # formatted like adorable.app
+```
+
+8. Run the development server:
 
    ```bash
    npm run dev
    ```
 
-8. Open [http://localhost:3000](http://localhost:3000) in your browser.
+9. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Deployment
 

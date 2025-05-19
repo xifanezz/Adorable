@@ -16,6 +16,7 @@ export const appsTable = pgTable("apps", {
   gitRepo: text("git_repo").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   baseId: text("base_id").notNull().default("nextjs-dkjfgdf"),
+  previewDomain: text("preview_domain").unique(),
 });
 
 export const appPermissions = pgEnum("app_user_permission", [
@@ -50,16 +51,6 @@ export const appDeployments = pgTable("app_deployments", {
     .notNull()
     .references(() => appsTable.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-  deploymentUrl: text("deployment_url").notNull().primaryKey(),
   deploymentId: text("deployment_id").notNull(),
   commit: text("commit").notNull(), // sha of the commit
-});
-
-export const appDomains = pgTable("app_domains", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  appId: uuid("app_id")
-    .notNull()
-    .references(() => appsTable.id),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  domain: text("domain").notNull(),
 });

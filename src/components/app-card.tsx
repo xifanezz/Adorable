@@ -9,13 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import {
-  ChevronRightIcon,
-  Trash,
-  ExternalLink,
-  GitForkIcon,
-  MoreVertical,
-} from "lucide-react";
+import { Trash, ExternalLink, MoreVertical } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { deleteApp } from "@/actions/delete-app";
@@ -24,7 +18,7 @@ import { toast } from "sonner";
 type AppCardProps = {
   id: string;
   name: string;
-  createdAt: string;
+  createdAt: Date;
   onDelete?: () => void;
 };
 
@@ -54,7 +48,7 @@ export function AppCard({ id, name, createdAt, onDelete }: AppCardProps) {
         <CardHeader>
           <CardTitle>{name}</CardTitle>
           <CardDescription>
-            Created {new Date(createdAt).toLocaleDateString()}
+            Created {createdAt.toLocaleDateString()}
           </CardDescription>
         </CardHeader>
       </Link>

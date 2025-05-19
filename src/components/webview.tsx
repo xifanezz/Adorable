@@ -9,8 +9,14 @@ import {
 import { useRef } from "react";
 import { Button } from "./ui/button";
 import { RefreshCwIcon } from "lucide-react";
+import { ShareButton } from "./share-button";
 
-export default function WebView(props: { repo: string; baseId: string }) {
+export default function WebView(props: {
+  repo: string;
+  baseId: string;
+  appId: string;
+  domain?: string;
+}) {
   function requestDevServer({ repoId }: { repoId: string }) {
     return requestDevServerInner({ repoId, baseId: props.baseId });
   }
@@ -19,7 +25,7 @@ export default function WebView(props: { repo: string; baseId: string }) {
 
   return (
     <div className="flex flex-col h-full overflow-hidden border-l transition-opacity duration-700 mt-px">
-      <div className="h-12 border-b border-gray-200 items-center flex px-2 bg-background sticky top-0 justify-end">
+      <div className="h-12 border-b border-gray-200 items-center flex px-2 bg-background sticky top-0 justify-end gap-2">
         <Button
           variant={"ghost"}
           size={"icon"}
@@ -27,6 +33,7 @@ export default function WebView(props: { repo: string; baseId: string }) {
         >
           <RefreshCwIcon />
         </Button>
+        <ShareButton domain={props.domain} appId={props.appId} />
       </div>
       <FreestyleDevServer
         ref={devServerRef}

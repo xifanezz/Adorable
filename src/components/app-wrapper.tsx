@@ -26,6 +26,7 @@ export default function AppWrapper({
   repoId,
   baseId,
   codeServerUrl,
+  domain,
 }: {
   appName: string;
   repo: string;
@@ -35,6 +36,7 @@ export default function AppWrapper({
   repoId: string;
   baseId: string;
   codeServerUrl: string;
+  domain: string;
 }) {
   const [activeView, setActiveView] = useState<"web" | "files">("web");
 
@@ -53,7 +55,13 @@ export default function AppWrapper({
           </div>
 
           <div className="overflow-auto">
-            <Preview activeView={activeView} repo={repo} baseId={baseId} />
+            <Preview
+              activeView={activeView}
+              repo={repo}
+              baseId={baseId}
+              appId={appId}
+              domain={domain}
+            />
           </div>
         </div>
       </div>
