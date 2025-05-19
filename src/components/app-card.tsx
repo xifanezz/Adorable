@@ -18,14 +18,16 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { deleteApp } from "@/actions/delete-app";
 
 type AppCardProps = {
   id: string;
   name: string;
   createdAt: string;
+  onDelete?: () => void;
 };
 
-export function AppCard({ id, name, createdAt }: AppCardProps) {
+export function AppCard({ id, name, createdAt, onDelete }: AppCardProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -34,9 +36,14 @@ export function AppCard({ id, name, createdAt }: AppCardProps) {
     router.push(`/app/${id}`);
   };
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = async (e: React.MouseEvent) => {
     e.preventDefault();
-    // TODO: Implement delete functionality
+    await deleteApp(id);
+    
+    if (onDelete) {
+      onDelete();
+    }
+    
     console.log(`Delete app: ${id}`);
   };
 
