@@ -8,7 +8,6 @@ import { eq, sql } from "drizzle-orm";
 import {
   adjectives,
   animals,
-  starWars,
   uniqueNamesGenerator,
 } from "unique-names-generator";
 
@@ -81,6 +80,7 @@ export async function publishApp({ appId }: { appId: string }) {
       url: `https://git.freestyle.sh/${app.app.gitRepo}`,
     },
     {
+      build: true,
       domains: [previewDomain],
     }
   );

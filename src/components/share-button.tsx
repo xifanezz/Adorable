@@ -7,6 +7,7 @@ import {
   CopyIcon,
   ExternalLinkIcon,
   RocketIcon,
+  Loader2Icon,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -19,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { publishApp } from "@/actions/publish-app";
+import { useState } from "react";
 
 interface ShareButtonProps {
   className?: string;
@@ -28,6 +30,7 @@ interface ShareButtonProps {
 
 export function ShareButton({ className, domain, appId }: ShareButtonProps) {
   // The domain may be undefined if no previewDomain exists in the database
+  const [isPublishing, setIsPublishing] = useState(false);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard
@@ -41,11 +44,18 @@ export function ShareButton({ className, domain, appId }: ShareButtonProps) {
   };
 
   const handlePublish = async () => {
-    await publishApp({
-      appId: appId,
-    });
-    // This would connect to a server action to publish the latest version
-    toast.success("Latest version published successfully!");
+    try {
+      setIsPublishing(true);
+      await publishApp({
+        appId: appId,
+      });
+      toast.success("Latest version published successfully!");
+    } catch (error) {
+      toast.error("Failed to publish app");
+      console.error(error);
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   return (
@@ -94,11 +104,11 @@ export function ShareButton({ className, domain, appId }: ShareButtonProps) {
                 </div>
               </div>
 
-              <div className="flex space-x-2">
+              <div className="flex flex-col space-y-2 w-full">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-2"
+                  className="gap-2 w-full"
                   onClick={() => window.open(`https://${domain}`, "_blank")}
                 >
                   <ExternalLinkIcon className="h-4 w-4" />
@@ -108,10 +118,15 @@ export function ShareButton({ className, domain, appId }: ShareButtonProps) {
                 <Button
                   variant="default"
                   size="sm"
-                  className="gap-2"
+                  className="gap-2 w-full"
                   onClick={handlePublish}
+                  disabled={isPublishing}
                 >
-                  <RocketIcon className="h-4 w-4" />
+                  {isPublishing ? (
+                    <Loader2Icon className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RocketIcon className="h-4 w-4" />
+                  )}
                   Publish Latest
                 </Button>
               </div>
@@ -127,8 +142,13 @@ export function ShareButton({ className, domain, appId }: ShareButtonProps) {
                 size="default"
                 className="gap-2 w-full"
                 onClick={handlePublish}
+                disabled={isPublishing}
               >
-                <RocketIcon className="h-4 w-4" />
+                {isPublishing ? (
+                  <Loader2Icon className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RocketIcon className="h-4 w-4" />
+                )}
                 Publish
               </Button>
             </div>
