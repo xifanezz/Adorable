@@ -29,7 +29,7 @@ export const appUsers = pgTable("app_users", {
   userId: text("user_id").notNull(),
   appId: uuid("app_id")
     .notNull()
-    .references(() => appsTable.id),
+    .references(() => appsTable.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   permissions: appPermissions("permissions"),
   freestyleIdentity: text("freestyle_identity").notNull(),
@@ -49,7 +49,7 @@ export const messagesTable = pgTable("messages", {
 export const appDeployments = pgTable("app_deployments", {
   appId: uuid("app_id")
     .notNull()
-    .references(() => appsTable.id),
+    .references(() => appsTable.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   deploymentId: text("deployment_id").notNull(),
   commit: text("commit").notNull(), // sha of the commit
