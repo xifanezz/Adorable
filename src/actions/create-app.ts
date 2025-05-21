@@ -28,7 +28,8 @@ export async function createApp({
             "vite-skdjfls":
               "https://github.com/freestyle-sh/freestyle-base-vite-react-typescript-swc",
             "expo-lksadfp": "https://github.com/freestyle-sh/freestyle-expo",
-          }[baseId] ?? "https://github.com/freestyle-sh/freestyle-next",
+          }[baseId] ??
+          "https://github.com/freestyle-sh/freestyle-base-nextjs-shadcn",
         type: "git",
       },
     })
