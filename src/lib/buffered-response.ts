@@ -11,7 +11,7 @@ export function bufferedResponse(originalStream: ReadableStream<Uint8Array>) {
 
   // Process the buffer and send chunks with adaptive delays
   async function processBuffer(
-    controller: ReadableStreamDefaultController<Uint8Array>,
+    controller: ReadableStreamDefaultController<Uint8Array>
   ) {
     if (processingBuffer || chunkBuffer.length === 0) return;
 
@@ -99,11 +99,5 @@ export function bufferedResponse(originalStream: ReadableStream<Uint8Array>) {
     },
   });
 
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-    },
-  });
+  return stream;
 }

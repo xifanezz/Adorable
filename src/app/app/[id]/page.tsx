@@ -38,7 +38,11 @@ export default async function AppPage({
     );
   }
 
+  console.log("authenticated user:", user);
+
   const app = await getApp(id);
+
+  console.log("app:", app);
 
   const { uiMessages } = await memory.query({
     threadId: id,
@@ -49,6 +53,8 @@ export default async function AppPage({
     repoId: app?.info.gitRepo,
     baseId: app?.info.baseId,
   });
+
+  console.log("requested dev server");
 
   // Use the previewDomain from the database, or fall back to a generated domain
   const domain = app.info.previewDomain;
@@ -63,7 +69,7 @@ export default async function AppPage({
         repo={app.info.gitRepo}
         appId={app.info.id}
         repoId={app.info.gitRepo}
-        domain={domain}
+        domain={domain ?? undefined}
       />
     </ViewTransition>
   );

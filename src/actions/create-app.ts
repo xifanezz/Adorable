@@ -37,6 +37,8 @@ export async function createApp({
       console.error("Error creating git repository:", JSON.stringify(e));
       throw new Error("Failed to create git repository");
     });
+
+  console.log(repo);
   await freestyle.grantGitPermission({
     identityId: user.freestyleIdentity,
     repoId: repo.repoId,

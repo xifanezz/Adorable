@@ -40,23 +40,24 @@ export function PromptInputBasic({
         className="w-full border dark:bg-accent shadow-sm rounded-lg border-gray-300focus-within:border-gray-400 focus-within:ring-1 transition-all duration-200 ease-in-out focus-within:ring-gray-200 border-gray-300"
       >
         <PromptInputTextarea
-          placeholder="Type your message here..."
+          placeholder={
+            isGenerating
+              ? "Adorable is working..."
+              : "Type your message here..."
+          }
           className="pr-10 bg-transparent dark:bg-transparent"
+          disabled={isGenerating || disabled}
         />
       </PromptInput>
       <div className="absolute right-3 bottom-3">
         <Button
-          variant={disabled ? "ghost" : isLoading ? "destructive" : "default"}
+          variant={"default"}
           size="icon"
           className="h-8 w-8 rounded-full"
-          disabled={disabled}
+          disabled={isGenerating || disabled}
           onClick={() => handleSubmit?.()}
         >
-          {isLoading ? (
-            <Square className="h-4 w-4" />
-          ) : (
-            <ArrowUp className="h-4 w-4" />
-          )}
+          <ArrowUp className="h-4 w-4" />
         </Button>
       </div>
     </div>

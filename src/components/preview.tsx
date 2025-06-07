@@ -10,7 +10,7 @@ export default function Preview(props: {
   domain?: string;
 }) {
   return (
-    <div className="h-full overflow-y-auto relative">
+    <div className="h-full overflow-hidden relative">
       <WebView
         repo={props.repo}
         baseId={props.baseId}

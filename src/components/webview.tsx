@@ -24,7 +24,7 @@ export default function WebView(props: {
   const devServerRef = useRef<FreestyleDevServerHandle>(null);
 
   return (
-    <div className="flex flex-col h-full overflow-hidden border-l transition-opacity duration-700 mt-px">
+    <div className="flex flex-col overflow-hidden h-screen border-l transition-opacity duration-700 mt-[2px]">
       <div className="h-12 border-b border-gray-200 items-center flex px-2 bg-background sticky top-0 justify-end gap-2">
         <Button
           variant={"ghost"}
@@ -39,18 +39,20 @@ export default function WebView(props: {
         ref={devServerRef}
         actions={{ requestDevServer }}
         repoId={props.repo}
-        loadingComponent={({ iframeLoading }) => (
-          <div className="flex items-center justify-center h-full">
-            <div>
-              <div className="text-center">
-                {iframeLoading ? "JavaScript Loading" : "Starting VM"}
-              </div>
+        loadingComponent={({ iframeLoading, devCommandRunning }) =>
+          !devCommandRunning && (
+            <div className="flex items-center justify-center h-full">
               <div>
-                <div className="loader"></div>
+                <div className="text-center">
+                  {iframeLoading ? "JavaScript Loading" : "Starting VM"}
+                </div>
+                <div>
+                  <div className="loader"></div>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )
+        }
       />
     </div>
   );

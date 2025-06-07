@@ -62,7 +62,7 @@ export default function Home() {
           setPlaceholderText(
             fullPlaceholder +
               " " +
-              currentIdea.substring(0, currentCharIndex + 1),
+              currentIdea.substring(0, currentCharIndex + 1)
           );
           currentCharIndex++;
           typingTimer = setTimeout(typeNextCharacter, 100);
@@ -80,9 +80,7 @@ export default function Home() {
       const currentIdea = exampleIdeas[currentTextIndex];
       if (currentCharIndex > 0) {
         setPlaceholderText(
-          fullPlaceholder +
-            " " +
-            currentIdea.substring(0, currentCharIndex - 1),
+          fullPlaceholder + " " + currentIdea.substring(0, currentCharIndex - 1)
         );
         currentCharIndex--;
         typingTimer = setTimeout(eraseText, 50);
@@ -113,7 +111,7 @@ export default function Home() {
           vite: "vite-skdjfls",
           expo: "expo-lksadfp",
         }[framework]
-      }`,
+      }`
     );
   };
 
@@ -186,7 +184,10 @@ export default function Home() {
               </div>
               <Examples setPrompt={setPrompt} />
               <div className="mt-8 mb-16">
-                <a className="border rounded-md px-4 py-2 mt-4 text-sm font-semibold transition-colors duration-200 ease-in-out cursor-pointer w-72 text-center block">
+                <a
+                  href="https://freestyle.sh"
+                  className="border rounded-md px-4 py-2 mt-4 text-sm font-semibold transition-colors duration-200 ease-in-out cursor-pointer w-72 text-center block"
+                >
                   <span className="block font-bold">
                     By <span className="underline">freestyle.sh</span>
                   </span>

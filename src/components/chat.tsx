@@ -118,25 +118,25 @@ function MessageBody({ message }: { message: Message }) {
           }
 
           if (part.type === "tool-invocation") {
-            if (
-              part.toolInvocation.state === "result" &&
-              part.toolInvocation.result.isError
-            ) {
-              return (
-                <div
-                  key={index}
-                  className="border-red-500 border text-sm text-red-800 rounded bg-red-100 px-2 py-1 mt-2 mb-4"
-                >
-                  {part.toolInvocation.result?.content?.map(
-                    (content: { type: "text"; text: string }, i: number) => (
-                      <div key={i}>{content.text}</div>
-                    ),
-                  )}
-                  {/* Unexpectedly failed while using tool{" "}
-                  {part.toolInvocation.toolName}. Please try again. again. */}
-                </div>
-              );
-            }
+            // if (
+            //   part.toolInvocation.state === "result" &&
+            //   part.toolInvocation.result.isError
+            // ) {
+            //   return (
+            //     <div
+            //       key={index}
+            //       className="border-red-500 border text-sm text-red-800 rounded bg-red-100 px-2 py-1 mt-2 mb-4"
+            //     >
+            //       {part.toolInvocation.result?.content?.map(
+            //         (content: { type: "text"; text: string }, i: number) => (
+            //           <div key={i}>{content.text}</div>
+            //         )
+            //       )}
+            //       {/* Unexpectedly failed while using tool{" "}
+            //       {part.toolInvocation.toolName}. Please try again. again. */}
+            //     </div>
+            //   );
+            // }
 
             // if (
             //   message.parts!.length - 1 == index &&

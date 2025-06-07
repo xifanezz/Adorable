@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Chat from "./chat";
 import Preview from "./preview";
 import { Message } from "ai";
@@ -36,9 +36,16 @@ export default function AppWrapper({
   repoId: string;
   baseId: string;
   codeServerUrl: string;
-  domain: string;
+  domain?: string;
 }) {
   const [activeView, setActiveView] = useState<"web" | "files">("web");
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "auto"; // or 'visible'
+    };
+  }, []);
 
   return (
     <RepoContext.Provider value={repoId}>

@@ -58,6 +58,31 @@ export function ToolMessage({
     );
   }
 
+  if (toolInvocation.toolName === "update_todo_list") {
+    return (
+      <ToolBlock name="update todo list" toolInvocation={toolInvocation}>
+        <div className="grid gap-2">
+          {toolInvocation.args?.items?.map?.(
+            (
+              item: { description: string; completed: boolean },
+              index: number
+            ) => (
+              <div
+                key={index}
+                className={cn(
+                  "px-4 py-1",
+                  item.completed && "line-through text-gray-500"
+                )}
+              >
+                {item.description}
+              </div>
+            )
+          )}
+        </div>
+      </ToolBlock>
+    );
+  }
+
   // Fallback for other tools
   return (
     <ToolBlock
@@ -159,21 +184,25 @@ function WriteFileTool({ toolInvocation }: { toolInvocation: ToolInvocation }) {
       argsText={toolInvocation.args?.path?.split("/").slice(2).join("/")}
       toolInvocation={toolInvocation}
     >
-      <CodeBlock className="overflow-scroll sticky bottom-0">
-        <CodeBlockCode
-          code={
-            toolInvocation.args?.content?.split("\n").slice(0, 5).join("\n") ??
-            ""
-          }
-          language={"tsx"}
-          className="col-start-1 col-end-1 row-start-1 row-end-1 overflow-visible [&_code]:bg-green-200! bg-green-200 [&>pre]:py-0!"
-        />
-        {toolInvocation.args?.content?.split("\n").length > 5 && (
-          <div className="text-green-700 px-4 text-xs pb-2 font-mono">
-            +{toolInvocation.args?.content?.split("\n").length - 5} more
-          </div>
-        )}
-      </CodeBlock>
+      {toolInvocation.args?.content && (
+        <CodeBlock className="overflow-scroll sticky bottom-0">
+          <CodeBlockCode
+            code={
+              toolInvocation.args?.content
+                ?.split("\n")
+                .slice(0, 5)
+                .join("\n") ?? ""
+            }
+            language={"tsx"}
+            className="col-start-1 col-end-1 row-start-1 row-end-1 overflow-visible [&_code]:bg-green-200! bg-green-200"
+          />
+          {toolInvocation.args?.content?.split("\n").length > 5 && (
+            <div className="text-green-700 px-4 text-xs pb-2 font-mono">
+              +{toolInvocation.args?.content?.split("\n").length - 5} more
+            </div>
+          )}
+        </CodeBlock>
+      )}
     </ToolBlock>
   );
 }
@@ -188,24 +217,54 @@ function ToolBlock(props: {
     <div>
       <div className="flex py-1">
         <div
-          className={cn(
-            "text-sm  px-2 mt-2 py-1 rounded max-h-24 overflow-scroll max-w-sm transition-colors duration-500",
-            props.toolInvocation?.state !== "result"
-              ? "border border-gray-800 animate-pulse bg-gray-800 text-white"
-              : "border border-neutral-500 text-neutral-500 bg-transparent"
-          )}
+          className="flex items-center gap-2"
+          // className={cn(
+          //   "text-sm  px-2 mt-2 py-1 rounded max-h-24 overflow-scroll max-w-sm transition-colors duration-500",
+          //   props.toolInvocation?.state !== "result"
+          //     ? "border border-gray-800 animate-pulse bg-gray-800 text-white"
+          //     : "border border-neutral-500 text-neutral-500 bg-transparent"
+          // )}
         >
-          <span className="font-bold">{props.name}</span>{" "}
-          <span
-            className={cn(
-              props.toolInvocation?.state !== "result" ? "text-gray-200" : ""
+          <div className="grid translate-y-[1px]">
+            {props.toolInvocation?.state !== "result" && (
+              <div
+                className={cn(
+                  "border border-black w-3 h-3 rounded-full inline-block col-start-1 col-end-1 row-start-1 row-end-1",
+
+                  "bg-black animate-ping"
+                )}
+              ></div>
             )}
-          >
-            {props.argsText}
-          </span>
+            <div
+              className={cn(
+                "border w-3 h-3 rounded-full inline-block col-start-1 col-end-1 row-start-1 row-end-1",
+                props.toolInvocation?.state === "result" &&
+                  props.toolInvocation.result?.isError
+                  ? "bg-red-500 border-red-500"
+                  : props.toolInvocation?.state === "result"
+                  ? "border-black"
+                  : "bg-black border-black"
+              )}
+            ></div>
+          </div>
+          <span className="font-medium">{props.name}</span>
+          <span>{props.argsText}</span>
         </div>
       </div>
-      {props.children && <div className="mb-2">{props.children}</div>}
+      {(props.children && <div className="mb-2">{props.children}</div>) ||
+        (props.toolInvocation?.state === "result" &&
+          props.toolInvocation.result?.isError &&
+          props.toolInvocation.result?.content?.map(
+            (content: { type: "text"; text: string }, i: number) => (
+              <CodeBlock key={i} className="overflow-scroll py-2">
+                <CodeBlockCode
+                  className="[&>pre]:py-0! py-2 text-red-500"
+                  code={content.text}
+                  language="text"
+                />
+              </CodeBlock>
+            )
+          ))}
     </div>
   );
 }
