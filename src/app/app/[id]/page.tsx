@@ -9,6 +9,8 @@ import { appUsers } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getUser } from "@/auth/stack-auth";
 import { memory } from "@/mastra/agents/builder";
+import { redirect, RedirectType } from "next/navigation";
+import { getStream } from "@/lib/streams";
 
 export default async function AppPage({
   params,
@@ -19,6 +21,15 @@ export default async function AppPage({
 }) {
   const { id } = await params;
   const { unsentMessage } = await searchParams;
+
+  const stream = await getStream(id);
+  if (!unsentMessage && stream) {
+    console.log("stream found for id:", id);
+    return redirect(
+      `/app/${id}?unsentMessage=${encodeURIComponent(stream.prompt)}`,
+      RedirectType.replace
+    );
+  }
 
   const user = await getUser();
 
@@ -38,11 +49,7 @@ export default async function AppPage({
     );
   }
 
-  console.log("authenticated user:", user);
-
   const app = await getApp(id);
-
-  console.log("app:", app);
 
   const { uiMessages } = await memory.query({
     threadId: id,

@@ -3,11 +3,12 @@ import { freestyle } from "@/lib/freestyle";
 import { getAppIdFromHeaders } from "@/lib/utils";
 import { MCPClient } from "@mastra/mcp";
 import { builderAgent } from "@/mastra/agents/builder";
-import { bufferedResponse } from "@/lib/buffered-response";
+import { deleteStream, getStream, setStream } from "@/lib/streams";
 import { CoreMessage } from "@mastra/core";
 
 // "fix" mastra mcp bug
 import { EventEmitter } from "events";
+
 EventEmitter.defaultMaxListeners = 1000;
 
 export async function POST(req: Request) {
@@ -20,6 +21,19 @@ export async function POST(req: Request) {
   const app = await getApp(appId);
   if (!app) {
     return new Response("App not found", { status: 404 });
+  }
+
+  const existingStream = await getStream(appId);
+  if (existingStream) {
+    const [stream1, stream2] = streams[appId].readable.tee();
+    streams[appId] = { readable: stream2, prompt: streams[appId].prompt };
+    return new Response(stream1, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
   }
 
   const { mcpEphemeralUrl, ephemeralUrl } = await freestyle.requestDevServer({
@@ -58,6 +72,7 @@ export async function POST(req: Request) {
         console.error("Error:", error);
       },
       onFinish: async (res) => {
+        deleteStream(appId!);
         console.log("Finished with reason:", res.finishReason);
 
         if (res.finishReason === "tool-calls" && fixCount < 10) {
@@ -100,14 +115,18 @@ export async function POST(req: Request) {
       toolCallStreaming: true,
     });
 
-    stream.toDataStream().pipeThrough(rootStream, {
+    const dataStream = stream.toDataStream();
+    dataStream.pipeThrough(rootStream, {
       preventClose: true,
     });
   }
 
   runAgent(message.content);
 
-  return new Response(rootStream.readable, {
+  const [stream1, stream2] = rootStream.readable.tee();
+  await setStream(appId, stream2, message.content);
+
+  return new Response(stream1, {
     headers: {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
@@ -116,10 +135,17 @@ export async function POST(req: Request) {
   });
 }
 
-// async function waitUntilUnlocked(stream: WritableStream | ReadableStream) {
-//   while (stream.locked) {
-//     await new Promise((resolve) => setTimeout(resolve, 10)); // 10ms delay
-//   }
+export async function GET(req: Request) {
+  const appId = getAppIdFromHeaders(req);
+  if (!appId) {
+    return new Response("Missing App Id header", { status: 400 });
+  }
 
-//   console.log("Stream is now unlocked");
-// }
+  return new Response(
+    JSON.stringify({
+      stream: streams[appId] && {
+        prompt: streams[appId].prompt,
+      },
+    })
+  );
+}
