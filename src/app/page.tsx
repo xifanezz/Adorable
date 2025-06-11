@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { ExampleButton } from "@/components/ExampleButton";
 import { unstable_ViewTransition as ViewTransition } from "react";
 import { UserButton } from "@stackframe/stack";
-import { ModeToggle } from "@/components/theme-provider";
 import { UserApps } from "@/components/user-apps";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -131,7 +130,6 @@ export default function Home() {
               height={36}
             />
             <div className="flex items-center gap-2 flex-1 sm:w-80 justify-end">
-              <ModeToggle />
               <UserButton />
             </div>
           </div>
