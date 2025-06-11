@@ -144,7 +144,7 @@ function PromptInputTextarea({
       onFocus={props.onFocus}
       onBlur={props.onBlur}
       className={cn(
-        "text-primary min-h-[44px] w-full resize-none border-none bg-transparent shadow-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0",
+        "text-primary min-h-[44px] w-full resize-none border-none bg-transparent shadow-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0 text-base sm:text-sm",
         className,
       )}
       rows={1}
@@ -165,11 +165,11 @@ function PromptInputActions({
 
   return (
     <div
-      className={cn("flex items-center justify-between w-full", className)}
+      className={cn("flex items-center justify-between w-full flex-wrap gap-2 sm:flex-nowrap", className)}
       {...props}
     >
-      <div className="self-end pb-1">{leftSlot}</div>
-      <div className="flex items-center gap-2">{children}</div>
+      <div className="self-end pb-1 order-1 sm:order-none">{leftSlot}</div>
+      <div className="flex items-center gap-2 order-2 sm:order-none">{children}</div>
     </div>
   );
 }
