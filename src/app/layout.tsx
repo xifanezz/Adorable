@@ -21,6 +21,13 @@ export const metadata: Metadata = {
   title: "Adorable",
   description: "Open Source AI App Builder",
   manifest: "/manifest.json",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+    viewportFit: "cover"
+  }
 };
 
 export default function RootLayout({

@@ -171,9 +171,11 @@ export default function Home() {
                           size="sm"
                           onClick={handleSubmit}
                           disabled={isLoading || !prompt.trim()}
-                          className="h-7 text-xs sm:text-sm"
+                          className="h-7 text-xs"
                         >
-                          <span className="hidden sm:inline">Start Creating ⏎</span>
+                          <span className="hidden sm:inline">
+                            Start Creating ⏎
+                          </span>
                           <span className="sm:hidden">Create ⏎</span>
                         </Button>
                       </PromptInputActions>

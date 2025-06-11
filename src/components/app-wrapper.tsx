@@ -62,7 +62,7 @@ export default function AppWrapper({
 
   return (
     <RepoContext.Provider value={repoId}>
-      <div className="h-screen flex flex-col">
+      <div className="h-screen flex flex-col" style={{ height: '100dvh' }}>
         {/* Desktop and Mobile container */}
         <div className="flex-1 overflow-hidden flex flex-col md:grid md:grid-cols-[1fr_2fr]">
           {/* Chat component - positioned for both mobile and desktop */}
@@ -74,7 +74,7 @@ export default function AppWrapper({
                   }`
                 : "h-full overflow-hidden flex flex-col"
             }
-            style={isMobile ? { top: 0, bottom: '60px' } : undefined}
+            style={isMobile ? { top: 'env(safe-area-inset-top)', bottom: 'calc(60px + env(safe-area-inset-bottom))' } : undefined}
           >
             <Chat
               topBar={<TopBar appName={appName} codeServerUrl={codeServerUrl} />}
@@ -92,7 +92,7 @@ export default function AppWrapper({
                   }`
                 : "overflow-auto"
             }
-            style={isMobile ? { top: 0, bottom: '60px' } : undefined}
+            style={isMobile ? { top: 'env(safe-area-inset-top)', bottom: 'calc(60px + env(safe-area-inset-bottom))' } : undefined}
           >
             <Preview
               activeView={activeView}
@@ -106,7 +106,7 @@ export default function AppWrapper({
 
         {/* Mobile tab navigation */}
         {isMobile && (
-          <div className="fixed bottom-0 left-0 right-0 flex border-t bg-background/95 backdrop-blur-sm h-[60px]">
+          <div className="fixed bottom-0 left-0 right-0 flex border-t bg-background/95 backdrop-blur-sm pb-safe" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
             <button
               onClick={() => setMobileActiveTab("chat")}
               className={`flex-1 flex flex-col items-center justify-center py-2 px-1 transition-colors ${
