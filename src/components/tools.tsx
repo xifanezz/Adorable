@@ -67,39 +67,38 @@ export function ToolMessage({
               item: { description: string; completed: boolean },
               index: number
             ) => (
-              <div
-                key={index}
-                className="flex items-center gap-3 px-4 py-1"
-              >
+              <div key={index} className="flex items-center gap-3 px-4 py-1">
                 {/* Minimal sleek checkbox */}
                 <div className="relative flex-shrink-0">
-                  <div 
+                  <div
                     className={cn(
                       "w-4 h-4 rounded border transition-all duration-200",
-                      item.completed 
-                        ? "bg-black border-black" 
+                      item.completed
+                        ? "bg-black border-black"
                         : "border-gray-300 hover:border-gray-400"
                     )}
                   >
                     {item.completed && (
-                      <svg 
-                        className="w-3 h-3 text-white absolute top-0.5 left-0.5" 
-                        fill="currentColor" 
+                      <svg
+                        className="w-3 h-3 text-white absolute top-0.5 left-0.5"
+                        fill="currentColor"
                         viewBox="0 0 20 20"
                       >
-                        <path 
-                          fillRule="evenodd" 
-                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" 
-                          clipRule="evenodd" 
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
                         />
                       </svg>
                     )}
                   </div>
                 </div>
-                <span className={cn(
-                  "flex-1",
-                  item.completed && "line-through text-gray-500"
-                )}>
+                <span
+                  className={cn(
+                    "flex-1",
+                    item.completed && "line-through text-gray-500"
+                  )}
+                >
                   {item.description}
                 </span>
               </div>
@@ -256,7 +255,7 @@ function ToolBlock(props: {
             {props.toolInvocation?.state !== "result" && (
               <div
                 className={cn(
-                  "border border-black w-3 h-3 rounded-full inline-block col-start-1 col-end-1 row-start-1 row-end-1",
+                  "border border-black w-2 h-2 rounded-full inline-block col-start-1 col-end-1 row-start-1 row-end-1",
 
                   "bg-black animate-ping"
                 )}
@@ -264,13 +263,13 @@ function ToolBlock(props: {
             )}
             <div
               className={cn(
-                "border w-3 h-3 rounded-full inline-block col-start-1 col-end-1 row-start-1 row-end-1",
+                "border w-2 h-2 rounded-full inline-block col-start-1 col-end-1 row-start-1 row-end-1",
                 props.toolInvocation?.state === "result" &&
                   props.toolInvocation.result?.isError
                   ? "bg-red-500 border-red-500"
                   : props.toolInvocation?.state === "result"
-                  ? "border-black"
-                  : "bg-black border-black"
+                  ? "border-gray-400 bg-gray-400"
+                  : "border-black bg-black"
               )}
             ></div>
           </div>
