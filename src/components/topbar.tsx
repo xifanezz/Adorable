@@ -19,7 +19,7 @@ export function TopBar({
       <Link href={"/"}>
         <HomeIcon />
       </Link>
-      <a target="_blank" href={codeServerUrl}>
+      <a target="_blank" href={codeServerUrl} className="hidden md:block">
         <Button size="sm" variant={"outline"}>
           {/* <img src="/vscode-logo.svg" className="h-4 w-4" /> */}
           VS Code
