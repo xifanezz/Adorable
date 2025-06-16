@@ -67,17 +67,17 @@ export default async function AppPage({
   const domain = app.info.previewDomain;
 
   return (
-    <ViewTransition>
-      <AppWrapper
-        baseId={app.info.baseId}
-        codeServerUrl={codeServerUrl}
-        appName={app.info.name}
-        initialMessages={uiMessages}
-        repo={app.info.gitRepo}
-        appId={app.info.id}
-        repoId={app.info.gitRepo}
-        domain={domain ?? undefined}
-      />
-    </ViewTransition>
+    // <ViewTransition>
+    <AppWrapper
+      baseId={app.info.baseId}
+      codeServerUrl={codeServerUrl}
+      appName={app.info.name}
+      initialMessages={uiMessages}
+      repo={app.info.gitRepo}
+      appId={app.info.id}
+      repoId={app.info.gitRepo}
+      domain={domain ?? undefined}
+    />
+    // </ViewTransition>
   );
 }
