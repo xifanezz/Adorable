@@ -9,15 +9,20 @@ export async function requestDevServer({
   repoId: string;
   baseId: string;
 }) {
-  const { ephemeralUrl, devCommandRunning, installCommandRunning } =
-    await freestyle.requestDevServer({
-      repoId: repoId,
-      baseId: baseId,
-    });
+  const {
+    ephemeralUrl,
+    devCommandRunning,
+    installCommandRunning,
+    codeServerUrl,
+  } = await freestyle.requestDevServer({
+    repoId: repoId,
+    baseId: baseId,
+  });
 
   return {
     ephemeralUrl,
     devCommandRunning,
     installCommandRunning,
+    codeServerUrl,
   };
 }

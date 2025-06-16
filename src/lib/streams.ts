@@ -6,7 +6,11 @@ declare global {
 globalThis.streams = globalThis.streams || {};
 
 export async function getStream(appId: string) {
-  return globalThis.streams[appId]?.readable ?? null;
+  return globalThis.streams[appId] ?? null;
+}
+
+export async function getStreamPrompt(appId: string) {
+  return globalThis.streams[appId]?.prompt ?? null;
 }
 
 export async function setStream(
