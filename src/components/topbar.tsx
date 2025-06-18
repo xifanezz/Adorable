@@ -1,6 +1,12 @@
 // Note: No "use client" directive, so it can be used in a server component
 
-import { ArrowUpRightIcon, HomeIcon } from "lucide-react";
+import {
+  ArrowUpRightIcon,
+  ComputerIcon,
+  GlobeIcon,
+  HomeIcon,
+  TerminalIcon,
+} from "lucide-react";
 import Link from "next/link";
 import React, { useState } from "react";
 import { Button } from "./ui/button";
@@ -116,23 +122,36 @@ code --folder-uri "vscode-remote://ssh-remote+$id/home/root"
   return (
     <div className="h-12 sticky top-0 flex items-center px-4 border-b border-gray-200 bg-background justify-between">
       <Link href={"/"}>
-        <HomeIcon />
+        <HomeIcon className="h-5 w-5" />
       </Link>
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogTrigger asChild>
-          <Button size="sm" variant={"outline"}>
-            {/* <img src="/vscode-logo.svg" className="h-4 w-4" alt="VS Code" /> */}
-            Open In
+          <Button size="sm" variant={"ghost"}>
+            <img
+              src="/logos/vscode.svg"
+              className="h-4 w-4"
+              alt="VS Code Logo"
+            />
+            {/* <img
+              src="/logos/cursor.png"
+              className="h-4 w-4"
+              alt="Cursor Logo"
+            /> */}
+            <TerminalIcon className="h-4 w-4" />
           </Button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Code Editor Options</DialogTitle>
+            <DialogTitle>Open In</DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col gap-4 py-4">
+          <div>
             {data && (
-              <>
+              <div className="flex flex-col gap-2 pb-4">
+                <div className="font-bold mt-4 flex items-center gap-2">
+                  <GlobeIcon className="inline h-4 w-4 ml-1" />
+                  Browser
+                </div>
                 <div>
                   <a
                     href={data.codeServerUrl}
@@ -140,10 +159,17 @@ code --folder-uri "vscode-remote://ssh-remote+$id/home/root"
                     className="w-full"
                   >
                     <Button
-                      variant="default"
+                      variant="outline"
                       className="w-full flex justify-between items-center"
                     >
-                      <span>Open VS Code in Browser</span>
+                      <div className="flex items-center gap-2">
+                        <img
+                          src="/logos/vscode.svg"
+                          className="h-4 w-4"
+                          alt="VS Code Logo"
+                        />
+                        <span>VS Code</span>
+                      </div>
                       <ArrowUpRightIcon className="h-4 w-4" />
                     </Button>
                   </a>
@@ -151,32 +177,23 @@ code --folder-uri "vscode-remote://ssh-remote+$id/home/root"
                 <div>
                   <a href={getConsoleUrl()} target="_blank" className="w-full">
                     <Button
-                      variant="default"
+                      variant="outline"
                       className="w-full flex justify-between items-center"
                     >
-                      <span>Open Console</span>
+                      <div className="flex items-center gap-2">
+                        <TerminalIcon className="h-4 w-4" />
+                        <span>Console</span>
+                      </div>
                       <ArrowUpRightIcon className="h-4 w-4" />
                     </Button>
                   </a>
                 </div>
-                <div>
-                  <Button
-                    variant="outline"
-                    className="w-full flex justify-between items-center"
-                    onClick={() => {
-                      navigator.clipboard.writeText(getSshCommand());
-                      setModalOpen(false);
-                    }}
-                  >
-                    <span>Copy SSH Command</span>
-                    <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                      Copy
-                    </span>
-                  </Button>
-                  {/* <div className="mt-2 bg-gray-50 p-2 rounded text-xs overflow-x-auto">
-                    <code>{getSshCommand()}</code>
-                  </div> */}
+
+                <div className="font-bold mt-4 flex items-center gap-2">
+                  <ComputerIcon className="inline h-4 w-4 ml-1" />
+                  Local
                 </div>
+
                 <div>
                   <Button
                     variant="outline"
@@ -186,16 +203,35 @@ code --folder-uri "vscode-remote://ssh-remote+$id/home/root"
                       setModalOpen(false);
                     }}
                   >
-                    <span>Copy VS Code Command</span>
-                    <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                      Copy
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <img
+                        src="/logos/vscode.svg"
+                        className="h-4 w-4"
+                        alt="VS Code Logo"
+                      />
+                      <span>VS Code Remote</span>
+                    </div>
+                    <span>Copy Command</span>
                   </Button>
-                  {/* <div className="mt-2 bg-gray-50 p-2 rounded text-xs overflow-x-auto">
-                    <code>{getSshCommand()}</code>
-                  </div> */}
                 </div>
-              </>
+
+                <div>
+                  <Button
+                    variant="outline"
+                    className="w-full flex justify-between items-center"
+                    onClick={() => {
+                      navigator.clipboard.writeText(getSshCommand());
+                      setModalOpen(false);
+                    }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <TerminalIcon className="h-4 w-4" />
+                      <span>SSH</span>
+                    </div>
+                    <span>Copy Command</span>
+                  </Button>
+                </div>
+              </div>
             )}
           </div>
         </DialogContent>
