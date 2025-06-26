@@ -3,38 +3,26 @@
 import { useChat } from "@ai-sdk/react";
 import { PromptInputBasic } from "./chatinput";
 import { Markdown } from "./ui/markdown";
-import { ChangeEvent, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ChatContainer } from "./ui/chat-container";
-import { Message } from "ai";
+import { UIMessage } from "ai";
 import { ToolMessage } from "./tools";
 
 export default function Chat(props: {
   appId: string;
-  initialMessages: Message[];
+  initialMessages: UIMessage[];
   isLoading?: boolean;
   topBar?: React.ReactNode;
   unsentMessage?: string;
 }) {
-  const { messages, handleSubmit, input, handleInputChange, status, append } =
-    useChat({
-      initialMessages: props.initialMessages,
-      generateId: () => {
-        return "cs-" + crypto.randomUUID();
-      },
-      sendExtraMessageFields: true,
-      headers: {
-        "Adorable-App-Id": props.appId,
-      },
-      api: "/api/chat",
-      experimental_prepareRequestBody: (request) => {
-        const lastMessage = request.messages.at(-1) ?? null;
-        return {
-          message: lastMessage,
-          threadId: props.appId,
-          resourceId: props.appId,
-        };
-      },
-    });
+  const { messages, sendMessage, status } = useChat({
+    messages: props.initialMessages,
+    generateId: () => {
+      return "cs-" + crypto.randomUUID();
+    },
+  });
+
+  const [input, setInput] = useState("");
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -48,24 +36,44 @@ export default function Chat(props: {
     if (unsentMessage) {
       window.history.replaceState(undefined, "", url.toString());
 
-      append({
-        content: unsentMessage,
-        role: "user",
-      });
+      sendMessage(
+        {
+          parts: [
+            {
+              type: "text",
+              text: unsentMessage,
+            },
+          ],
+        },
+        {
+          headers: {
+            "Adorable-App-Id": props.appId,
+          },
+        }
+      );
     }
   });
 
-  const onValueChange = (value: string) => {
-    handleInputChange({
-      target: { value },
-    } as ChangeEvent<HTMLTextAreaElement>);
-  };
-
-  const onSubmit = (e?: Event) => {
+  const onSubmit = (e?: React.FormEvent<HTMLFormElement>) => {
     if (e?.preventDefault) {
       e.preventDefault();
     }
-    handleSubmit(e);
+    sendMessage(
+      {
+        parts: [
+          {
+            type: "text",
+            text: input,
+          },
+        ],
+      },
+      {
+        headers: {
+          "Adorable-App-Id": props.appId,
+        },
+      }
+    );
+    setInput("");
   };
 
   return (
@@ -86,9 +94,11 @@ export default function Chat(props: {
       </div>
       <div className="flex-shrink-0 p-3 transition-all bg-background md:backdrop-blur-sm">
         <PromptInputBasic
-          input={input || ""}
+          input={input}
+          onValueChange={(value) => {
+            setInput(value);
+          }}
           onSubmit={onSubmit}
-          onValueChange={onValueChange}
           isGenerating={
             props.isLoading || status === "streaming" || status === "submitted"
           }
@@ -98,12 +108,14 @@ export default function Chat(props: {
   );
 }
 
-function MessageBody({ message }: { message: Message }) {
+function MessageBody({ message }: { message: UIMessage }) {
   if (message.role === "user") {
     return (
       <div className="flex justify-end py-1 mb-4">
         <div className="bg-neutral-200 dark:bg-neutral-700 rounded-xl px-4 py-1 max-w-[80%] ml-auto">
-          {message.content}
+          {message.parts.map((part) =>
+            part.type === "text" ? part.text : "unexpected message"
+          )}
         </div>
       </div>
     );
@@ -123,7 +135,7 @@ function MessageBody({ message }: { message: Message }) {
             );
           }
 
-          if (part.type === "tool-invocation") {
+          if (part.type.startsWith("tool-")) {
             // if (
             //   part.toolInvocation.state === "result" &&
             //   part.toolInvocation.result.isError
@@ -148,9 +160,7 @@ function MessageBody({ message }: { message: Message }) {
             //   message.parts!.length - 1 == index &&
             //   part.toolInvocation.state !== "result"
             // ) {
-            return (
-              <ToolMessage key={index} toolInvocation={part.toolInvocation} />
-            );
+            return <ToolMessage key={index} toolInvocation={part} />;
             // } else {
             //   return undefined;
             // }
@@ -160,10 +170,14 @@ function MessageBody({ message }: { message: Message }) {
     );
   }
 
-  if (message.content) {
+  if (message.parts) {
     return (
       <Markdown className="prose prose-sm dark:prose-invert max-w-none">
-        {message.content}
+        {message.parts
+          .map((part) =>
+            part.type === "text" ? part.text : "[something went wrong]"
+          )
+          .join("")}
       </Markdown>
     );
   }
