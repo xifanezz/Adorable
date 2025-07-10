@@ -10,7 +10,6 @@ export function ToolMessage({
   toolInvocation: UIMessage["parts"][number];
   className?: string;
 }) {
-  console.log("Tool invocation:", toolInvocation);
   if (toolInvocation.type === "tool-list_directory") {
     return (
       <ToolBlock

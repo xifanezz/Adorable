@@ -2,13 +2,13 @@
 
 import React, { useEffect, useState } from "react";
 import Chat from "./chat";
-import Preview from "./preview";
-import { Message } from "ai";
 import { createContext } from "react";
 import { useContext } from "react";
 import { TopBar } from "./topbar";
 import { MessageCircle, Monitor } from "lucide-react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import WebView from "./webview";
+import { UIMessage } from "ai";
 
 export const RepoContext = createContext<string | undefined>(undefined);
 
@@ -35,13 +35,12 @@ export default function AppWrapper({
   repo: string;
   appId: string;
   respond?: boolean;
-  initialMessages: Message[];
+  initialMessages: UIMessage[];
   repoId: string;
   baseId: string;
   codeServerUrl: string;
   domain?: string;
 }) {
-  const [activeView, setActiveView] = useState<"web" | "files">("web");
   const [mobileActiveTab, setMobileActiveTab] = useState<"chat" | "preview">(
     "chat"
   );
@@ -120,8 +119,7 @@ export default function AppWrapper({
                 : undefined
             }
           >
-            <Preview
-              activeView={activeView}
+            <WebView
               repo={repo}
               baseId={baseId}
               appId={appId}

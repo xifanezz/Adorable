@@ -2,7 +2,6 @@
 
 import { getApp } from "@/actions/get-app";
 import AppWrapper from "../../../components/app-wrapper";
-import { unstable_ViewTransition as ViewTransition } from "react";
 import { freestyle } from "@/lib/freestyle";
 import { db } from "@/lib/db";
 import { appUsers } from "@/db/schema";
@@ -58,7 +57,6 @@ export default async function AppPage({
 
   const { codeServerUrl } = await freestyle.requestDevServer({
     repoId: app?.info.gitRepo,
-    baseId: app?.info.baseId,
   });
 
   console.log("requested dev server");

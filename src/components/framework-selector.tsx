@@ -10,36 +10,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { templates } from "@/lib/templates";
 
 type FrameworkSelectorProps = {
-  value?: string;
-  onChange?: (value: string) => void;
+  value?: keyof typeof templates;
+  onChange: (value: keyof typeof templates) => void;
   className?: string;
 };
 
 export function FrameworkSelector({
-  value = "next",
+  value = "nextjs",
   onChange,
   className,
 }: FrameworkSelectorProps) {
-  // Map of framework names to their respective logos
-  const frameworkLogos = {
-    next: "/logos/next.svg",
-    vite: "/logos/vite.svg",
-    expo: "/logos/expo.svg",
-  };
-
-  // Map of framework names to their display names
-  const frameworkNames = {
-    next: "Next.js",
-    vite: "Vite",
-    expo: "Expo",
-  };
-
-  const handleSelect = (framework: string) => {
-    onChange?.(framework);
-  };
-
   return (
     <div className={cn("relative", className)}>
       <DropdownMenu>
@@ -51,35 +34,35 @@ export function FrameworkSelector({
             style={{ boxShadow: "none" }}
           >
             <Image
-              src={frameworkLogos[value as keyof typeof frameworkLogos]}
-              alt={frameworkNames[value as keyof typeof frameworkNames]}
+              src={templates[value].logo}
+              alt={templates[value].name}
               width={16}
               height={16}
               className="opacity-90"
             />
-            {frameworkNames[value as keyof typeof frameworkNames]}
+            {templates[value].name}
             <ChevronDownIcon className="h-3 w-3 opacity-70" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
           align="start"
-          className="min-w-[8rem] shadow-none !shadow-none border border-gray-200"
+          className="min-w-[8rem] !shadow-none border border-gray-200"
           style={{ boxShadow: "none" }}
         >
-          {Object.entries(frameworkNames).map(([key, name]) => (
+          {Object.entries(templates).map(([key, template]) => (
             <DropdownMenuItem
               key={key}
-              onClick={() => handleSelect(key)}
+              onClick={() => onChange(key)}
               className="gap-2 text-xs"
             >
               <Image
-                src={frameworkLogos[key as keyof typeof frameworkLogos]}
-                alt={name}
+                src={template.logo}
+                alt={template.name}
                 width={16}
                 height={16}
                 className="opacity-90"
               />
-              {name}
+              {templates[key].name}
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>

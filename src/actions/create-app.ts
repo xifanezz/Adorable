@@ -4,61 +4,45 @@ import { getUser } from "@/auth/stack-auth";
 import { appsTable, appUsers } from "@/db/schema";
 import { db } from "@/lib/db";
 import { freestyle } from "@/lib/freestyle";
+import { templates } from "@/lib/templates";
 import { memory } from "@/mastra/agents/builder";
 
 export async function createApp({
   initialMessage,
-  baseId,
+  templateId,
 }: {
   initialMessage?: string;
-  baseId: string;
+  templateId: string;
 }) {
   const user = await getUser();
 
-  console.time("create git repo");
-  const repo = await freestyle
-    .createGitRepository({
-      name: "Unnamed App",
-      public: true,
-      source: {
-        url:
-          {
-            "nextjs-dkjfgdf":
-              "https://github.com/freestyle-sh/freestyle-base-nextjs-shadcn",
-            "vite-skdjfls":
-              "https://github.com/freestyle-sh/freestyle-base-vite-react-typescript-swc",
-            "expo-lksadfp": "https://github.com/freestyle-sh/freestyle-expo",
-          }[baseId] ??
-          "https://github.com/freestyle-sh/freestyle-base-nextjs-shadcn",
-        type: "git",
-      },
-    })
-    .catch((e) => {
-      console.error("Error creating git repository:", JSON.stringify(e));
-      throw new Error("Failed to create git repository");
-    });
+  if (!templates[templateId]) {
+    throw new Error(
+      `Template ${templateId} not found. Available templates: ${Object.keys(templates).join(", ")}`
+    );
+  }
 
-  console.log(repo);
+  const repo = await freestyle.createGitRepository({
+    name: "Unnamed App",
+    public: true,
+    source: {
+      type: "git",
+      url: templates[templateId].repo,
+    },
+  });
+
+  console.log("Created repo", repo);
+
   await freestyle.grantGitPermission({
     identityId: user.freestyleIdentity,
     repoId: repo.repoId,
     permission: "write",
   });
-  console.timeEnd("create git repo");
 
-  // remapping baseIds because we don't have base image for expo yet
-  const BASE_IDS = {
-    "nextjs-dkjfgdf": "nextjs-dkjfgdf",
-    "vite-skdjfls": "vite-skdjfls",
-    "expo-lksadfp": "vite-skdjfls",
-  };
-
-  console.time("start dev server");
   await freestyle.requestDevServer({
     repoId: repo.repoId,
-    baseId: BASE_IDS[baseId],
   });
-  console.timeEnd("start dev server");
+  console.log("dev server ready");
 
   const token = await freestyle.createGitAccessToken({
     identityId: user.freestyleIdentity,
@@ -70,7 +54,6 @@ export async function createApp({
       .values({
         gitRepo: repo.repoId,
         name: initialMessage,
-        baseId: baseId,
       })
       .returning();
 

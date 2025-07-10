@@ -62,7 +62,7 @@ export function ShareButton({ className, domain, appId }: ShareButtonProps) {
     <Dialog>
       <DialogTrigger asChild>
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
           className={`flex items-center gap-1 ${className || ""}`}
         >

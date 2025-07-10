@@ -41,7 +41,6 @@ export function TopBar({
       // calling requestDevServer right away breaks the web view for some reason
       await new Promise((resolve) => setTimeout(resolve, 500));
       const data = await requestDevServer({
-        baseId: baseId,
         repoId: repoId,
       });
       return data;
