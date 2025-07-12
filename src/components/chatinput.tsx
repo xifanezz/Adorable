@@ -7,7 +7,7 @@ import {
   PromptInputTextarea,
 } from "@/components/ui/prompt-input";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, Square } from "lucide-react";
+import { ArrowUp, SquareIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface PromptInputBasicProps {
@@ -16,10 +16,12 @@ interface PromptInputBasicProps {
   input?: string;
   disabled?: boolean;
   onValueChange?: (value: string) => void;
+  stop: () => void;
 }
 
 export function PromptInputBasic({
   onSubmit: handleSubmit,
+  stop,
   isGenerating = false,
   input = "",
   onValueChange,
@@ -50,15 +52,26 @@ export function PromptInputBasic({
         />
       </PromptInput>
       <div className="absolute right-3 bottom-3">
-        <Button
-          variant={"default"}
-          size="icon"
-          className="h-8 w-8 rounded-full"
-          disabled={isGenerating || disabled}
-          onClick={() => handleSubmit?.()}
-        >
-          <ArrowUp className="h-4 w-4" />
-        </Button>
+        {isGenerating ? (
+          <Button
+            variant={"default"}
+            size="icon"
+            className="h-8 w-8 rounded-full"
+            onClick={stop}
+          >
+            <SquareIcon className="h-4 w-4" />
+          </Button>
+        ) : (
+          <Button
+            variant={"default"}
+            size="icon"
+            className="h-8 w-8 rounded-full"
+            disabled={isGenerating || disabled}
+            onClick={() => handleSubmit?.()}
+          >
+            <ArrowUp className="h-4 w-4" />
+          </Button>
+        )}
       </div>
     </div>
   );

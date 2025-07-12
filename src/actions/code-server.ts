@@ -4,7 +4,6 @@ import { freestyle } from "@/lib/freestyle";
 
 export async function getCodeServerUrl({
   repoId,
-  baseId,
 }: {
   repoId: string;
   baseId: string;

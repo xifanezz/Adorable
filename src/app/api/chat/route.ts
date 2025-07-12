@@ -3,13 +3,16 @@ import { freestyle } from "@/lib/freestyle";
 import { getAppIdFromHeaders } from "@/lib/utils";
 import { MCPClient } from "@mastra/mcp";
 import { builderAgent } from "@/mastra/agents/builder";
-import { convertToModelMessages, UIMessage } from "ai";
+import { UIMessage } from "ai";
 
 // "fix" mastra mcp bug
 import { EventEmitter } from "events";
+import { getStream, getStreamAbortSignal, setStream } from "@/lib/streams";
 EventEmitter.defaultMaxListeners = 1000;
 
-export async function POST(req: Request) {
+import { NextRequest } from "next/server";
+
+export async function POST(req: NextRequest) {
   const appId = getAppIdFromHeaders(req);
 
   if (!appId) {
@@ -21,57 +24,80 @@ export async function POST(req: Request) {
     return new Response("App not found", { status: 404 });
   }
 
-  const { mcpEphemeralUrl, ephemeralUrl } = await freestyle.requestDevServer({
-    repoId: app.info.gitRepo,
-    baseId: app.info.baseId,
-  });
+  // todo: don't allow multiple streams at a time
+  // ? how do we know if a stream is still running of if it errored?
+  const currentStream = await getStream(appId);
+  if (currentStream) {
+    console.log("Stream already exists for appId:", appId);
+    return await currentStream.response();
+  }
 
   const { messages }: { messages: UIMessage[] } = await req.json();
 
+  const { mcpEphemeralUrl } = await freestyle.requestDevServer({
+    repoId: app.info.gitRepo,
+  });
+
+  const resumableStream = await sendMessage(
+    appId,
+    mcpEphemeralUrl,
+    messages.at(-1)!
+  );
+
+  return resumableStream.response();
+}
+
+export async function sendMessage(
+  appId: string,
+  mcpUrl: string,
+  message: UIMessage
+) {
   const mcp = new MCPClient({
     id: crypto.randomUUID(),
     servers: {
       dev_server: {
-        url: new URL(mcpEphemeralUrl),
+        url: new URL(mcpUrl),
       },
     },
   });
 
   const toolsets = await mcp.getToolsets();
 
-  const stream = await builderAgent.stream(
-    convertToModelMessages([messages.at(-1)!]),
-    {
-      threadId: appId,
-      resourceId: appId,
-      maxSteps: 100,
-      maxRetries: 0,
-      maxOutputTokens: 64000,
-      toolsets,
-      onError: async (error) => {
-        await mcp.disconnect();
-        console.error("Error:", error);
+  await builderAgent.getMemory()?.saveMessages({
+    messages: [
+      {
+        content: {
+          parts: message.parts,
+          format: 3,
+        },
+        role: "user",
+        createdAt: new Date(),
+        id: message.id,
+        threadId: appId,
+        type: "text",
+        resourceId: appId,
       },
-      onFinish: async () => {
-        await mcp.disconnect();
-      },
-    }
-  );
+    ],
+  });
 
-  return stream.toUIMessageStreamResponse();
-}
+  const stream = await builderAgent.stream([], {
+    threadId: appId,
+    resourceId: appId,
+    maxSteps: 100,
+    maxRetries: 0,
+    maxOutputTokens: 64000,
+    toolsets,
+    onError: async (error) => {
+      await mcp.disconnect();
+      console.error("Error:", error);
+    },
+    onFinish: async () => {
+      await mcp.disconnect();
+    },
+    abortSignal: await getStreamAbortSignal(appId),
+  });
 
-export async function GET(req: Request) {
-  const appId = getAppIdFromHeaders(req);
-  if (!appId) {
-    return new Response("Missing App Id header", { status: 400 });
-  }
+  console.log("Stream created for appId:", appId, "with prompt:", message);
 
-  return new Response(
-    JSON.stringify({
-      stream: streams[appId] && {
-        prompt: streams[appId].prompt,
-      },
-    })
-  );
+  return await setStream(appId, message, stream);
 }

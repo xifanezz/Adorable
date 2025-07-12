@@ -3,7 +3,7 @@
 import { useChat } from "@ai-sdk/react";
 import { PromptInputBasic } from "./chatinput";
 import { Markdown } from "./ui/markdown";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ChatContainer } from "./ui/chat-container";
 import { UIMessage } from "ai";
 import { ToolMessage } from "./tools";
@@ -13,46 +13,15 @@ export default function Chat(props: {
   initialMessages: UIMessage[];
   isLoading?: boolean;
   topBar?: React.ReactNode;
-  unsentMessage?: string;
 }) {
-  const { messages, sendMessage, status } = useChat({
+  console.log("Chat component rendered with appId:", props.appId);
+  const { messages, sendMessage, status, stop } = useChat({
     messages: props.initialMessages,
-    generateId: () => {
-      return "cs-" + crypto.randomUUID();
-    },
+    id: props.appId,
+    resume: true,
   });
 
   const [input, setInput] = useState("");
-
-  useEffect(() => {
-    const url = new URL(window.location.href);
-    const unsentMessageRaw = url.searchParams.get("unsentMessage");
-    url.searchParams.delete("unsentMessage");
-
-    const unsentMessage = unsentMessageRaw
-      ? decodeURIComponent(unsentMessageRaw)
-      : null;
-
-    if (unsentMessage) {
-      window.history.replaceState(undefined, "", url.toString());
-
-      sendMessage(
-        {
-          parts: [
-            {
-              type: "text",
-              text: unsentMessage,
-            },
-          ],
-        },
-        {
-          headers: {
-            "Adorable-App-Id": props.appId,
-          },
-        }
-      );
-    }
-  });
 
   const onSubmit = (e?: React.FormEvent<HTMLFormElement>) => {
     if (e?.preventDefault) {
@@ -76,6 +45,19 @@ export default function Chat(props: {
     setInput("");
   };
 
+  async function handleStop() {
+    await fetch("/api/chat/" + props.appId + "/stream", {
+      method: "DELETE",
+      headers: {
+        "Adorable-App-Id": props.appId,
+      },
+    });
+    await stop();
+    // await stop().catch(() => {
+    //   console.error("Failed to stop stream");
+    // });
+  }
+
   return (
     <div
       className="flex flex-col h-full"
@@ -94,6 +76,7 @@ export default function Chat(props: {
       </div>
       <div className="flex-shrink-0 p-3 transition-all bg-background md:backdrop-blur-sm">
         <PromptInputBasic
+          stop={handleStop}
           input={input}
           onValueChange={(value) => {
             setInput(value);

@@ -1,5 +1,6 @@
 "use server";
 
+import { sendMessage } from "@/app/api/chat/route";
 import { getUser } from "@/auth/stack-auth";
 import { appsTable, appUsers } from "@/db/schema";
 import { db } from "@/lib/db";
@@ -39,7 +40,7 @@ export async function createApp({
     permission: "write",
   });
 
-  await freestyle.requestDevServer({
+  const { mcpEphemeralUrl } = await freestyle.requestDevServer({
     repoId: repo.repoId,
   });
   console.log("dev server ready");
@@ -76,6 +77,19 @@ export async function createApp({
     threadId: app.id,
     resourceId: app.id,
   });
+
+  if (initialMessage) {
+    await sendMessage(app.id, mcpEphemeralUrl, {
+      id: crypto.randomUUID(),
+      parts: [
+        {
+          text: initialMessage,
+          type: "text",
+        },
+      ],
+      role: "user",
+    });
+  }
 
   return app;
 }

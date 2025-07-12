@@ -45,5 +45,5 @@ export default async function NewAppRedirectPage({
     templateId: search.template as string,
   });
 
-  redirect(`/app/${id}?unsentMessage=${search.message}`);
+  redirect(`/app/${id}`);
 }

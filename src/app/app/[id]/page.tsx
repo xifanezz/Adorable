@@ -8,27 +8,16 @@ import { appUsers } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getUser } from "@/auth/stack-auth";
 import { memory } from "@/mastra/agents/builder";
-import { redirect, RedirectType } from "next/navigation";
-import { getStream } from "@/lib/streams";
+import { buttonVariants } from "@/components/ui/button";
+import Link from "next/dist/client/link";
 
 export default async function AppPage({
   params,
-  searchParams,
 }: {
-  params: Promise<{ id: string; unsentMessage: string }>;
+  params: Promise<{ id: string }>;
   searchParams: Promise<{ [key: string]: string | string[] }>;
 }) {
   const { id } = await params;
-  const { unsentMessage } = await searchParams;
-
-  const stream = await getStream(id);
-  if (!unsentMessage && stream) {
-    console.log("stream found for id:", id);
-    return redirect(
-      `/app/${id}?unsentMessage=${encodeURIComponent(stream.prompt)}`,
-      RedirectType.replace
-    );
-  }
 
   const user = await getUser();
 
@@ -41,14 +30,14 @@ export default async function AppPage({
   ).at(0);
 
   if (!userPermission?.permissions) {
-    return (
-      <div>
-        Project not found or you don&apos;t have permission to access it.
-      </div>
-    );
+    return <ProjectNotFound />;
   }
 
-  const app = await getApp(id);
+  const app = await getApp(id).catch(() => undefined);
+
+  if (!app) {
+    return <ProjectNotFound />;
+  }
 
   const { uiMessages } = await memory.query({
     threadId: id,
@@ -65,8 +54,8 @@ export default async function AppPage({
   const domain = app.info.previewDomain;
 
   return (
-    // <ViewTransition>
     <AppWrapper
+      key={app.info.id}
       baseId={app.info.baseId}
       codeServerUrl={codeServerUrl}
       appName={app.info.name}
@@ -76,6 +65,18 @@ export default async function AppPage({
       repoId={app.info.gitRepo}
       domain={domain ?? undefined}
     />
-    // </ViewTransition>
+  );
+}
+
+function ProjectNotFound() {
+  return (
+    <div className="text-center my-16">
+      Project not found or you don&apos;t have permission to access it.
+      <div className="flex justify-center mt-4">
+        <Link className={buttonVariants()} href="/">
+          Go back to home
+        </Link>
+      </div>
+    </div>
   );
 }
