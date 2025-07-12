@@ -7,7 +7,7 @@ import { UIMessage } from "ai";
 
 // "fix" mastra mcp bug
 import { EventEmitter } from "events";
-import { getStream, getStreamAbortSignal, setStream } from "@/lib/streams";
+import { getStream, getAbortCallback, setStream } from "@/lib/streams";
 EventEmitter.defaultMaxListeners = 1000;
 
 import { NextRequest } from "next/server";
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   }
 
   // todo: don't allow multiple streams at a time
-  // ? how do we know if a stream is still running of if it errored?
+  // ? how do we know if a stream is still running or if it errored?
   const currentStream = await getStream(appId);
   if (currentStream) {
     console.log("Stream already exists for appId:", appId);
@@ -80,6 +80,12 @@ export async function sendMessage(
     ],
   });
 
+  const controller = new AbortController();
+  let shouldAbort = false;
+  await getAbortCallback(appId, () => {
+    shouldAbort = true;
+  });
+
   const stream = await builderAgent.stream([], {
     threadId: appId,
     resourceId: appId,
@@ -87,6 +93,12 @@ export async function sendMessage(
     maxRetries: 0,
     maxOutputTokens: 64000,
     toolsets,
+    savePerStep: true,
+    onStepFinish() {
+      if (shouldAbort) {
+        controller.abort("Aborted stream after step finish");
+      }
+    },
     onError: async (error) => {
       await mcp.disconnect();
       console.error("Error:", error);
@@ -94,7 +106,7 @@ export async function sendMessage(
     onFinish: async () => {
       await mcp.disconnect();
     },
-    abortSignal: await getStreamAbortSignal(appId),
+    abortSignal: controller.signal,
   });
 
   console.log("Stream created for appId:", appId, "with prompt:", message);

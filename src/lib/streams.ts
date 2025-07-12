@@ -42,9 +42,81 @@ export async function getStream(appId: string) {
         return stream;
       },
       async response() {
-        const stream = await streamContext.resumeExistingStream(lastMessage.id);
+        const resumableStream = await streamContext.resumeExistingStream(
+          lastMessage.id
+        );
+        let controller: ReadableStreamDefaultController<Uint8Array> | null =
+          null;
+        let isCancelled = false;
 
-        return new Response(stream, {
+        // Create a new ReadableStream that we can control
+        const controllableStream = new ReadableStream<Uint8Array>({
+          start(ctrl) {
+            controller = ctrl;
+          },
+          cancel() {
+            isCancelled = true;
+            // Cancel the original resumable stream
+            try {
+              resumableStream?.cancel();
+            } catch (error) {
+              console.log("Error cancelling resumable stream:", error);
+            }
+          },
+        });
+
+        // Set up the abort callback before we start consuming the stream
+        getAbortCallback(appId, () => {
+          console.log("cancelling http stream");
+          isCancelled = true;
+          if (controller) {
+            try {
+              controller.close();
+            } catch (error) {
+              console.log("Error closing controller:", error);
+            }
+          }
+          try {
+            resumableStream?.cancel();
+          } catch (error) {
+            console.log("Error cancelling resumable stream:", error);
+          }
+        });
+
+        // Start consuming the resumable stream and pipe it to our controllable stream
+        if (resumableStream) {
+          const reader = resumableStream.getReader();
+          const encoder = new TextEncoder();
+
+          const pump = async () => {
+            try {
+              while (!isCancelled) {
+                const { done, value } = await reader.read();
+
+                if (done || isCancelled) {
+                  if (controller && !isCancelled) {
+                    controller.close();
+                  }
+                  break;
+                }
+
+                if (controller && !isCancelled) {
+                  controller.enqueue(encoder.encode(value));
+                }
+              }
+            } catch (error) {
+              if (controller && !isCancelled) {
+                controller.error(error);
+              }
+            } finally {
+              reader.releaseLock();
+            }
+          };
+
+          pump();
+        }
+
+        return new Response(controllableStream, {
           headers: {
             "content-type": "text/event-stream",
             "cache-control": "no-cache",
@@ -66,6 +138,12 @@ export async function setStream(
 ) {
   console.log("Setting stream for appId:", appId, "with prompt:", prompt);
   const responseBody = stream.toUIMessageStreamResponse().body;
+  const message = await getCurrentUserMessage(appId);
+
+  if (!message) {
+    throw new Error("No current user message found for appId: " + appId);
+  }
+
   if (!responseBody) {
     throw new Error(
       "Error creating resumable stream: response body is undefined"
@@ -73,7 +151,7 @@ export async function setStream(
   }
 
   const resumableStream = await streamContext.createNewResumableStream(
-    prompt.id,
+    message.id,
     () => {
       return responseBody.pipeThrough(
         new TextDecoderStream()
@@ -83,7 +161,77 @@ export async function setStream(
 
   return {
     response() {
-      return new Response(resumableStream, {
+      let controller: ReadableStreamDefaultController<Uint8Array> | null = null;
+      let isCancelled = false;
+
+      // Create a new ReadableStream that we can control
+      const controllableStream = new ReadableStream<Uint8Array>({
+        start(ctrl) {
+          controller = ctrl;
+        },
+        cancel() {
+          isCancelled = true;
+          // Cancel the original resumable stream
+          try {
+            resumableStream?.cancel();
+          } catch (error) {
+            console.log("Error cancelling resumable stream:", error);
+          }
+        },
+      });
+
+      // Set up the abort callback before we start consuming the stream
+      getAbortCallback(appId, () => {
+        console.log("cancelling http stream");
+        isCancelled = true;
+        if (controller) {
+          try {
+            controller.close();
+          } catch (error) {
+            console.log("Error closing controller:", error);
+          }
+        }
+        try {
+          resumableStream?.cancel();
+        } catch (error) {
+          console.log("Error cancelling resumable stream:", error);
+        }
+      });
+
+      // Start consuming the resumable stream and pipe it to our controllable stream
+      if (resumableStream) {
+        const reader = resumableStream.getReader();
+        const encoder = new TextEncoder();
+
+        const pump = async () => {
+          try {
+            while (!isCancelled) {
+              const { done, value } = await reader.read();
+
+              if (done || isCancelled) {
+                if (controller && !isCancelled) {
+                  controller.close();
+                }
+                break;
+              }
+
+              if (controller && !isCancelled) {
+                controller.enqueue(encoder.encode(value));
+              }
+            }
+          } catch (error) {
+            if (controller && !isCancelled) {
+              controller.error(error);
+            }
+          } finally {
+            reader.releaseLock();
+          }
+        };
+
+        pump();
+      }
+
+      return new Response(controllableStream, {
         headers: {
           "content-type": "text/event-stream",
           "cache-control": "no-cache",
@@ -97,34 +245,39 @@ export async function setStream(
   };
 }
 
-export async function getStreamAbortSignal(appId: string) {
-  const controller = new AbortController();
-
+export async function getAbortCallback(appId: string, callback: () => void) {
   redis.subscribe("events:" + appId, (event) => {
     const data = JSON.parse(event);
     if (data.type === "abort-stream") {
       console.log("Stream aborted for appId:", appId);
-      controller.abort("Stream aborted by server");
+      callback();
     }
   });
-
-  return controller.signal;
 }
 
 async function getCurrentUserMessage(appId: string) {
-  const lastMessage = (
+  console.log("getting current user message for appId:", appId);
+  const messages = (
     await memory.query({
       threadId: appId,
       resourceId: appId,
       selectBy: {
-        last: 1,
+        last: 100,
       },
     })
-  ).uiMessages.at(0);
+  ).uiMessages;
 
-  if (lastMessage?.role !== "user") {
+  // Find the last message with role "user"
+  const lastMessage = messages
+    .filter((message) => message.role === "user")
+    .pop();
+
+  if (!lastMessage) {
+    console.log("No user messages found for appId:", appId);
     return undefined;
   }
+
+  console.log(lastMessage);
 
   return lastMessage;
 }

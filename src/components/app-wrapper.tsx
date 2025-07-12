@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Chat from "./chat";
 import { TopBar } from "./topbar";
 import { MessageCircle, Monitor } from "lucide-react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import WebView from "./webview";
 import { UIMessage } from "ai";
 
@@ -32,26 +31,22 @@ export default function AppWrapper({
   );
   const [isMobile, setIsMobile] = useState(false);
 
-  useMemo(() => {
-    console.log("AppWrapper useMemo called for appId:", appId);
-  }, [appId]);
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
 
-  // useEffect(() => {
-  //   const checkMobile = () => {
-  //     setIsMobile(window.innerWidth < 768); // md breakpoint
-  //   };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
-  //   checkMobile();
-  //   window.addEventListener("resize", checkMobile);
-  //   return () => window.removeEventListener("resize", checkMobile);
-  // }, []);
-
-  // useEffect(() => {
-  //   document.body.style.overflow = "hidden";
-  //   return () => {
-  //     document.body.style.overflow = "auto"; // or 'visible'
-  //   };
-  // }, []);
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "auto"; // or 'visible'
+    };
+  }, []);
 
   return (
     <div className="h-screen flex flex-col" style={{ height: "100dvh" }}>

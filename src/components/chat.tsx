@@ -52,10 +52,6 @@ export default function Chat(props: {
         "Adorable-App-Id": props.appId,
       },
     });
-    await stop();
-    // await stop().catch(() => {
-    //   console.error("Failed to stop stream");
-    // });
   }
 
   return (
