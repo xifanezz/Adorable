@@ -69,7 +69,7 @@ export function ToolMessage({
             ) => (
               <div key={index} className="flex items-center gap-3 px-4 py-1">
                 {/* Minimal sleek checkbox */}
-                <div className="relative flex-shrink-0">
+                <div className="relative flex-shrink-0 pointer-events-none">
                   <div
                     className={cn(
                       "w-4 h-4 rounded border transition-all duration-200",

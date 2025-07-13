@@ -73,14 +73,6 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // todo: don't allow multiple streams at a time
-  // ? how do we know if a stream is still running or if it errored?
-  // const currentStream = await getStream(appId);
-  // if (currentStream) {
-  //   console.log("Stream already exists for appId:", appId);
-  //   return await currentStream.response();
-  // }
-
   const { messages }: { messages: UIMessage[] } = await req.json();
 
   const { mcpEphemeralUrl } = await freestyle.requestDevServer({
