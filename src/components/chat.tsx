@@ -7,18 +7,30 @@ import { useState } from "react";
 import { ChatContainer } from "./ui/chat-container";
 import { UIMessage } from "ai";
 import { ToolMessage } from "./tools";
+import { useQuery } from "@tanstack/react-query";
+import { chatState } from "@/actions/chat-streaming";
 
 export default function Chat(props: {
   appId: string;
   initialMessages: UIMessage[];
   isLoading?: boolean;
   topBar?: React.ReactNode;
+  running: boolean;
 }) {
   console.log("Chat component rendered with appId:", props.appId);
-  const { messages, sendMessage, status, stop } = useChat({
+  const { messages, sendMessage } = useChat({
     messages: props.initialMessages,
     id: props.appId,
-    resume: true,
+    resume: props.running,
+  });
+
+  const { data: chat } = useQuery({
+    queryKey: ["stream", props.appId],
+    queryFn: async () => {
+      return chatState(props.appId);
+    },
+    refetchInterval: 1000,
+    refetchOnWindowFocus: true,
   });
 
   const [input, setInput] = useState("");
@@ -78,9 +90,7 @@ export default function Chat(props: {
             setInput(value);
           }}
           onSubmit={onSubmit}
-          isGenerating={
-            props.isLoading || status === "streaming" || status === "submitted"
-          }
+          isGenerating={props.isLoading || chat?.state === "running"}
         />
       </div>
     </div>

@@ -10,6 +10,7 @@ import { getUser } from "@/auth/stack-auth";
 import { memory } from "@/mastra/agents/builder";
 import { buttonVariants } from "@/components/ui/button";
 import Link from "next/dist/client/link";
+import { chatState } from "@/actions/chat-streaming";
 
 export default async function AppPage({
   params,
@@ -64,6 +65,7 @@ export default async function AppPage({
       appId={app.info.id}
       repoId={app.info.gitRepo}
       domain={domain ?? undefined}
+      running={(await chatState(app.info.id)).state === "running"}
     />
   );
 }

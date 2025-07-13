@@ -48,7 +48,7 @@ export function PromptInputBasic({
               : "Type your message here..."
           }
           className="pr-10 bg-transparent dark:bg-transparent"
-          disabled={isGenerating || disabled}
+          disabled={disabled}
         />
       </PromptInput>
       <div className="absolute right-3 bottom-3">

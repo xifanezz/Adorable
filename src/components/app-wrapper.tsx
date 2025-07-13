@@ -6,6 +6,9 @@ import { TopBar } from "./topbar";
 import { MessageCircle, Monitor } from "lucide-react";
 import WebView from "./webview";
 import { UIMessage } from "ai";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient();
 
 export default function AppWrapper({
   appName,
@@ -15,6 +18,7 @@ export default function AppWrapper({
   repoId,
   baseId,
   domain,
+  running,
 }: {
   appName: string;
   repo: string;
@@ -25,6 +29,7 @@ export default function AppWrapper({
   baseId: string;
   codeServerUrl: string;
   domain?: string;
+  running: boolean;
 }) {
   const [mobileActiveTab, setMobileActiveTab] = useState<"chat" | "preview">(
     "chat"
@@ -72,12 +77,15 @@ export default function AppWrapper({
               : undefined
           }
         >
-          <Chat
-            topBar={<TopBar appName={appName} repoId={repoId} />}
-            appId={appId}
-            initialMessages={initialMessages}
-            key={appId}
-          />
+          <QueryClientProvider client={queryClient}>
+            <Chat
+              topBar={<TopBar appName={appName} repoId={repoId} />}
+              appId={appId}
+              initialMessages={initialMessages}
+              key={appId}
+              running={running}
+            />
+          </QueryClientProvider>
         </div>
 
         {/* Preview component - positioned for both mobile and desktop */}
