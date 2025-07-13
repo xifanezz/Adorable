@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     stopStream(appId);
 
     // Wait until stream state is cleared
-    const maxAttempts = 10;
+    const maxAttempts = 60;
     let attempts = 0;
     while (attempts < maxAttempts) {
       await new Promise((resolve) => setTimeout(resolve, 500));
@@ -168,6 +168,9 @@ export async function sendMessage(
         controller.abort("Aborted stream after step finish");
       }
     },
+    // stopWhen: (step) => {
+    //   return step.steps.some(s => s.toolResults?.some(r => r.output?.context.stop === true));
+    // },
     onError: async (error) => {
       await mcp.disconnect();
       await redisPublisher.del(`app:${appId}:stream-state`);

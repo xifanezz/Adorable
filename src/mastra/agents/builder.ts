@@ -8,7 +8,7 @@ import { z } from "zod";
 
 export const memory = new Memory({
   options: {
-    lastMessages: 10,
+    lastMessages: 1000,
     semanticRecall: false,
     threads: {
       generateTitle: true,
