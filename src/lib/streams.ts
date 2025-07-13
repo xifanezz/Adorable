@@ -58,7 +58,7 @@ export async function setStream(
     );
   }
 
-  await redisPublisher.set(`app:${appId}:stream-state`, "running");
+  await redisPublisher.set(`app:${appId}:stream-state`, "running", { EX: 15 });
 
   const resumableStream = await streamContext.createNewResumableStream(
     appId,

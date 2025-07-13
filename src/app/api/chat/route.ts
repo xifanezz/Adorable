@@ -3,7 +3,7 @@ import { freestyle } from "@/lib/freestyle";
 import { getAppIdFromHeaders } from "@/lib/utils";
 import { MCPClient } from "@mastra/mcp";
 import { builderAgent } from "@/mastra/agents/builder";
-import { StepResult, ToolSet, UIMessage } from "ai";
+import { UIMessage } from "ai";
 
 // "fix" mastra mcp bug
 import { EventEmitter } from "events";
@@ -12,6 +12,7 @@ EventEmitter.defaultMaxListeners = 1000;
 
 import { NextRequest } from "next/server";
 import { redisPublisher } from "@/lib/redis";
+import { MessageList } from "@mastra/core/agent";
 
 let lastRequestTime = 0;
 
@@ -64,6 +65,7 @@ export async function POST(req: NextRequest) {
 
     // If stream is still running after max attempts, return an error
     if (attempts >= maxAttempts) {
+      await redisPublisher.del(`app:${appId}:stream-state`);
       return new Response(
         "Previous stream is still shutting down, please try again",
         { status: 429 }
@@ -133,7 +135,13 @@ export async function sendMessage(
     shouldAbort = true;
   });
 
-  const steps: StepResult<ToolSet>[] = [];
+  let lastKeepAlive = Date.now();
+
+  const messageList = new MessageList({
+    resourceId: appId,
+    threadId: appId,
+  });
+
   const stream = await builderAgent.stream([], {
     threadId: appId,
     resourceId: appId,
@@ -141,36 +149,25 @@ export async function sendMessage(
     maxRetries: 0,
     maxOutputTokens: 64000,
     toolsets,
-    // savePerStep: true,
-    async onStepFinish(step) {
-      steps.push(step);
-      step.createdAt = new Date();
-
-      if (shouldAbort) {
-        await builderAgent.getMemory()?.saveMessages({
-          messages: steps
-            .map((step) => {
-              console.log(JSON.stringify(step.content, null, 2));
-              return step;
-            })
-            .map((step) => ({
-              content: step.content.filter((part) => part.type !== "tool-call"),
-              role: "assistant",
-              createdAt: step.createdAt,
-              id: crypto.randomUUID(),
-              threadId: appId,
-              type: "v3",
-              resourceId: appId,
-            })),
-          format: "v2",
-        });
-        await redisPublisher.del(`app:${appId}:stream-state`);
-        controller.abort("Aborted stream after step finish");
+    async onChunk() {
+      if (Date.now() - lastKeepAlive > 5000) {
+        lastKeepAlive = Date.now();
+        redisPublisher.set(`app:${appId}:stream-state`, "running", { EX: 15 });
       }
     },
-    // stopWhen: (step) => {
-    //   return step.steps.some(s => s.toolResults?.some(r => r.output?.context.stop === true));
-    // },
+    async onStepFinish(step) {
+      messageList.add(step.response.messages, "response");
+
+      if (shouldAbort) {
+        await redisPublisher.del(`app:${appId}:stream-state`);
+        controller.abort("Aborted stream after step finish");
+        const messages = messageList.drainUnsavedMessages();
+        console.log(messages);
+        await builderAgent.getMemory()?.saveMessages({
+          messages,
+        });
+      }
+    },
     onError: async (error) => {
       await mcp.disconnect();
       await redisPublisher.del(`app:${appId}:stream-state`);
