@@ -18,11 +18,10 @@ let lastRequestTime = 0;
 
 export async function POST(req: NextRequest) {
   const currentTime = Date.now();
-  if (currentTime - lastRequestTime < 100) {
-    console.log("Throttling request to chat API");
-    console.log("Last request time:", lastRequestTime);
-    console.log("Current request time:", currentTime);
-    console.log("Time since last request:", currentTime - lastRequestTime);
+  if (currentTime - lastRequestTime < 500) {
+    console.log(
+      "Blocked too frequent request to chat stream to prevent ai sdk resume bug."
+    );
     return new Response("Please wait before sending another request", {
       status: 429,
     });
@@ -144,7 +143,9 @@ export async function sendMessage(
     async onChunk() {
       if (Date.now() - lastKeepAlive > 5000) {
         lastKeepAlive = Date.now();
-        redisPublisher.set(`app:${appId}:stream-state`, "running", { EX: 15 });
+        redisPublisher.set(`app:${appId}:stream-state`, "running", {
+          EX: 15,
+        });
       }
     },
     async onStepFinish(step) {

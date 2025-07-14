@@ -7,8 +7,10 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (Date.now() - lastRecieivedAt < 100) {
-    console.log("GET stream request too soon, returning empty response");
+  if (Date.now() - lastRecieivedAt < 500) {
+    console.log(
+      "Blocked too frequent request to chat stream to prevent ai sdk resume bug."
+    );
     return new Response(null, {
       status: 204,
       headers: {

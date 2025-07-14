@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useChat } from "@ai-sdk/react";
 import { PromptInputBasic } from "./chatinput";
 import { Markdown } from "./ui/markdown";
@@ -9,6 +10,7 @@ import { UIMessage } from "ai";
 import { ToolMessage } from "./tools";
 import { useQuery } from "@tanstack/react-query";
 import { chatState } from "@/actions/chat-streaming";
+import { CompressedImage } from "@/lib/image-compression";
 
 export default function Chat(props: {
   appId: string;
@@ -57,6 +59,37 @@ export default function Chat(props: {
     setInput("");
   };
 
+  const onSubmitWithImages = (text: string, images: CompressedImage[]) => {
+    const parts: Parameters<typeof sendMessage>[0]["parts"] = [];
+
+    if (text.trim()) {
+      parts.push({
+        type: "text",
+        text: text,
+      });
+    }
+
+    images.forEach((image) => {
+      parts.push({
+        type: "file",
+        mediaType: image.mimeType,
+        url: image.data,
+      });
+    });
+
+    sendMessage(
+      {
+        parts,
+      },
+      {
+        headers: {
+          "Adorable-App-Id": props.appId,
+        },
+      }
+    );
+    setInput("");
+  };
+
   async function handleStop() {
     await fetch("/api/chat/" + props.appId + "/stream", {
       method: "DELETE",
@@ -77,7 +110,7 @@ export default function Chat(props: {
         style={{ overflowAnchor: "auto" }}
       >
         <ChatContainer autoScroll>
-          {messages.map((message) => (
+          {messages.map((message: any) => (
             <MessageBody key={message.id} message={message} />
           ))}
         </ChatContainer>
@@ -90,6 +123,7 @@ export default function Chat(props: {
             setInput(value);
           }}
           onSubmit={onSubmit}
+          onSubmitWithImages={onSubmitWithImages}
           isGenerating={props.isLoading || chat?.state === "running"}
         />
       </div>
@@ -97,14 +131,33 @@ export default function Chat(props: {
   );
 }
 
-function MessageBody({ message }: { message: UIMessage }) {
+function MessageBody({ message }: { message: any }) {
   if (message.role === "user") {
     return (
       <div className="flex justify-end py-1 mb-4">
         <div className="bg-neutral-200 dark:bg-neutral-700 rounded-xl px-4 py-1 max-w-[80%] ml-auto">
-          {message.parts.map((part) =>
-            part.type === "text" ? part.text : "unexpected message"
-          )}
+          {message.parts.map((part: any, index: number) => {
+            if (part.type === "text") {
+              return <div key={index}>{part.text}</div>;
+            } else if (
+              part.type === "file" &&
+              part.mediaType?.startsWith("image/")
+            ) {
+              return (
+                <div key={index} className="mt-2">
+                  <Image
+                    src={part.url as string}
+                    alt="User uploaded image"
+                    width={200}
+                    height={200}
+                    className="max-w-full h-auto rounded"
+                    style={{ maxHeight: "200px" }}
+                  />
+                </div>
+              );
+            }
+            return <div key={index}>unexpected message</div>;
+          })}
         </div>
       </div>
     );
@@ -113,7 +166,7 @@ function MessageBody({ message }: { message: UIMessage }) {
   if (Array.isArray(message.parts) && message.parts.length !== 0) {
     return (
       <div className="mb-4">
-        {message.parts.map((part, index) => {
+        {message.parts.map((part: any, index: any) => {
           if (part.type === "text") {
             return (
               <div key={index} className="mb-4">
@@ -163,7 +216,7 @@ function MessageBody({ message }: { message: UIMessage }) {
     return (
       <Markdown className="prose prose-sm dark:prose-invert max-w-none">
         {message.parts
-          .map((part) =>
+          .map((part: any) =>
             part.type === "text" ? part.text : "[something went wrong]"
           )
           .join("")}
