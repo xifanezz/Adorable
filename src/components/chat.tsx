@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useChat } from "@ai-sdk/react";
+
 import { PromptInputBasic } from "./chatinput";
 import { Markdown } from "./ui/markdown";
 import { useState } from "react";
@@ -11,6 +11,7 @@ import { ToolMessage } from "./tools";
 import { useQuery } from "@tanstack/react-query";
 import { chatState } from "@/actions/chat-streaming";
 import { CompressedImage } from "@/lib/image-compression";
+import { useChatSafe } from "./use-chat";
 
 export default function Chat(props: {
   appId: string;
@@ -19,13 +20,6 @@ export default function Chat(props: {
   topBar?: React.ReactNode;
   running: boolean;
 }) {
-  console.log("Chat component rendered with appId:", props.appId);
-  const { messages, sendMessage } = useChat({
-    messages: props.initialMessages,
-    id: props.appId,
-    resume: props.running,
-  });
-
   const { data: chat } = useQuery({
     queryKey: ["stream", props.appId],
     queryFn: async () => {
@@ -33,6 +27,12 @@ export default function Chat(props: {
     },
     refetchInterval: 1000,
     refetchOnWindowFocus: true,
+  });
+
+  const { messages, sendMessage } = useChatSafe({
+    messages: props.initialMessages,
+    id: props.appId,
+    resume: props.running && chat?.state === "running",
   });
 
   const [input, setInput] = useState("");

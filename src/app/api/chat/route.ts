@@ -14,20 +14,7 @@ import { NextRequest } from "next/server";
 import { redisPublisher } from "@/lib/redis";
 import { MessageList } from "@mastra/core/agent";
 
-let lastRequestTime = 0;
-
 export async function POST(req: NextRequest) {
-  const currentTime = Date.now();
-  if (currentTime - lastRequestTime < 500) {
-    console.log(
-      "Blocked too frequent request to chat stream to prevent ai sdk resume bug."
-    );
-    return new Response("Please wait before sending another request", {
-      status: 429,
-    });
-  }
-  lastRequestTime = currentTime;
-
   console.log("creating new chat stream");
   const appId = getAppIdFromHeaders(req);
 
@@ -103,7 +90,9 @@ export async function sendMessage(
 
   const toolsets = await mcp.getToolsets();
 
-  await builderAgent.getMemory()?.saveMessages({
+  await (
+    await builderAgent.getMemory()
+  )?.saveMessages({
     messages: [
       {
         content: {
