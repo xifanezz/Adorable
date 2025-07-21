@@ -11,10 +11,11 @@ Open-source version of **Lovable** - an AI agent that can make websites and apps
 
 ## Setup Instructions
 
-### Prerequisites
+### Dependencies
 
 - Node.js
 - PostgreSQL database ([Neon](https://neon.tech) is easy and has a good free tier)
+- Redis (for caching and session management)
 - Anthropic API key
 - Freestyle API key
 
