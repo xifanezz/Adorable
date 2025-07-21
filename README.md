@@ -87,7 +87,7 @@ STACK_SECRET_SERVER_KEY=<your-secret-server-key>
 
 7. Add a Preview Domain (optional)
 
-Go to the [Freestyle dashboard](https://admin.freestyle.sh/dashboard/domains) and verify a new domain. Then follow the [DNS Instructions](https://docs.freestyle.sh/Getting-Started/deploy-to-custom-domain#all-subdomains-of-a-domain) to point your domain to Freestyle.
+Go to the [Freestyle dashboard](https://admin.freestyle.sh/dashboard/domains) and verify a new domain. Then follow the [DNS Instructions](https://docs.freestyle.sh/web/deploy-to-custom-domain) to point your domain to Freestyle.
 
 Finally, add the following environment variable to your `.env` file:
 
