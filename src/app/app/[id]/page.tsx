@@ -45,7 +45,7 @@ export default async function AppPage({
     resourceId: id,
   });
 
-  const { codeServerUrl } = await freestyle.requestDevServer({
+  const { codeServerUrl, ephemeralUrl } = await freestyle.requestDevServer({
     repoId: app?.info.gitRepo,
   });
 
@@ -61,6 +61,7 @@ export default async function AppPage({
       codeServerUrl={codeServerUrl}
       appName={app.info.name}
       initialMessages={uiMessages}
+      consoleUrl={ephemeralUrl + "/__console"}
       repo={app.info.gitRepo}
       appId={app.info.id}
       repoId={app.info.gitRepo}

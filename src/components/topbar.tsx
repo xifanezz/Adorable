@@ -1,5 +1,3 @@
-// Note: No "use client" directive, so it can be used in a server component
-
 import {
   ArrowUpRightIcon,
   ComputerIcon,
@@ -98,7 +96,7 @@ export function TopBar({
                 </a>
               </div>
 
-              <div className="font-bold mt-4 flex items-center gap-2">
+              {/* <div className="font-bold mt-4 flex items-center gap-2">
                 <ComputerIcon className="inline h-4 w-4 ml-1" />
                 Local
               </div>
@@ -129,7 +127,7 @@ export function TopBar({
                   variant="outline"
                   className="w-full flex justify-between items-center"
                   onClick={() => {
-                    navigator.clipboard.writeText();
+                    navigator.clipboard.writeText(`ssh ${}@vm-ssh`);
                     setModalOpen(false);
                   }}
                 >
@@ -139,7 +137,7 @@ export function TopBar({
                   </div>
                   <span>Copy Command</span>
                 </Button>
-              </div>
+              </div> */}
             </div>
           </div>
         </DialogContent>

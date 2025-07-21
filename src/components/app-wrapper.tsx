@@ -19,6 +19,8 @@ export default function AppWrapper({
   baseId,
   domain,
   running,
+  codeServerUrl,
+  consoleUrl,
 }: {
   appName: string;
   repo: string;
@@ -28,6 +30,7 @@ export default function AppWrapper({
   repoId: string;
   baseId: string;
   codeServerUrl: string;
+  consoleUrl: string;
   domain?: string;
   running: boolean;
 }) {
@@ -79,7 +82,14 @@ export default function AppWrapper({
         >
           <QueryClientProvider client={queryClient}>
             <Chat
-              topBar={<TopBar appName={appName} repoId={repoId} />}
+              topBar={
+                <TopBar
+                  appName={appName}
+                  repoId={repoId}
+                  consoleUrl={consoleUrl}
+                  codeServerUrl={codeServerUrl}
+                />
+              }
               appId={appId}
               initialMessages={initialMessages}
               key={appId}

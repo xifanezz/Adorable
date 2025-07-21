@@ -15,7 +15,9 @@ export async function createApp({
   initialMessage?: string;
   templateId: string;
 }) {
+  console.time("get user");
   const user = await getUser();
+  console.timeEnd("get user");
 
   if (!templates[templateId]) {
     throw new Error(
@@ -23,6 +25,7 @@ export async function createApp({
     );
   }
 
+  console.time("git");
   const repo = await freestyle.createGitRepository({
     name: "Unnamed App",
     public: true,
@@ -31,24 +34,25 @@ export async function createApp({
       url: templates[templateId].repo,
     },
   });
-
-  console.log("Created repo", repo);
-
   await freestyle.grantGitPermission({
     identityId: user.freestyleIdentity,
     repoId: repo.repoId,
     permission: "write",
   });
 
-  const { mcpEphemeralUrl } = await freestyle.requestDevServer({
-    repoId: repo.repoId,
-  });
-  console.log("dev server ready");
-
   const token = await freestyle.createGitAccessToken({
     identityId: user.freestyleIdentity,
   });
 
+  console.timeEnd("git");
+
+  console.time("dev server");
+  const { mcpEphemeralUrl } = await freestyle.requestDevServer({
+    repoId: repo.repoId,
+  });
+  console.timeEnd("dev server");
+
+  console.time("database: create app");
   const app = await db.transaction(async (tx) => {
     const appInsertion = await tx
       .insert(appsTable)
@@ -72,13 +76,17 @@ export async function createApp({
 
     return appInsertion[0];
   });
+  console.timeEnd("database: create app");
 
+  console.time("mastra: create thread");
   await memory.createThread({
     threadId: app.id,
     resourceId: app.id,
   });
+  console.timeEnd("mastra: create thread");
 
   if (initialMessage) {
+    console.time("send initial message");
     await sendMessage(app.id, mcpEphemeralUrl, {
       id: crypto.randomUUID(),
       parts: [
@@ -89,6 +97,7 @@ export async function createApp({
       ],
       role: "user",
     });
+    console.timeEnd("send initial message");
   }
 
   return app;
