@@ -18,7 +18,7 @@ export default function WebView(props: {
   domain?: string;
 }) {
   function requestDevServer({ repoId }: { repoId: string }) {
-    return requestDevServerInner({ repoId, baseId: props.baseId });
+    return requestDevServerInner({ repoId });
   }
 
   const devServerRef = useRef<FreestyleDevServerHandle>(null);

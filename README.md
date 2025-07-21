@@ -11,10 +11,11 @@ Open-source version of **Lovable** - an AI agent that can make websites and apps
 
 ## Setup Instructions
 
-### Prerequisites
+### Dependencies
 
 - Node.js
 - PostgreSQL database ([Neon](https://neon.tech) is easy and has a good free tier)
+- Redis (for caching and session management)
 - Anthropic API key
 - Freestyle API key
 
@@ -56,6 +57,22 @@ Open-source version of **Lovable** - an AI agent that can make websites and apps
    ```bash
    npx drizzle-kit push
    ```
+
+6. Set up Redis
+
+The easiest way to run Redis locally is with Docker:
+
+```bash
+docker run --name adorable-redis -p 6379:6379 -d redis
+```
+
+This will start a Redis server on port 6379. If you already have Redis running, you can skip this step.
+
+Add the following to your `.env` file (if not already present):
+
+```env
+REDIS_URL=redis://localhost:6379
+```
 
 6. Set up [Stack Auth](https://stack-auth.com)
 

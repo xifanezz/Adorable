@@ -1,75 +1,75 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { ToolInvocation } from "ai";
+import { UIMessage } from "ai";
 import { CodeBlock, CodeBlockCode } from "./ui/code-block";
 
 export function ToolMessage({
   toolInvocation,
 }: {
-  toolInvocation: ToolInvocation;
+  toolInvocation: UIMessage["parts"][number];
   className?: string;
 }) {
-  if (toolInvocation.toolName === "list_directory") {
+  if (toolInvocation.type === "tool-list_directory") {
     return (
       <ToolBlock
         name="listing directory"
-        argsText={toolInvocation.args?.path?.split("/").slice(2).join("/")}
+        argsText={toolInvocation.input?.path?.split("/").slice(2).join("/")}
         toolInvocation={toolInvocation}
       />
     );
   }
 
-  if (toolInvocation.toolName === "read_file") {
+  if (toolInvocation.type === "tool-read_file") {
     return (
       <ToolBlock
         name="read file"
-        argsText={toolInvocation.args?.path?.split("/").slice(2).join("/")}
+        argsText={toolInvocation.input?.path?.split("/").slice(2).join("/")}
         toolInvocation={toolInvocation}
       />
     );
   }
 
-  if (toolInvocation.toolName === "edit_file") {
+  if (toolInvocation.type === "tool-edit_file") {
     return <EditFileTool toolInvocation={toolInvocation} />;
   }
 
-  if (toolInvocation.toolName === "write_file") {
+  if (toolInvocation.type === "tool-write_file") {
     return <WriteFileTool toolInvocation={toolInvocation} />;
   }
 
-  if (toolInvocation.toolName === "exec") {
+  if (toolInvocation.type === "tool-exec") {
     return (
       <ToolBlock
         name="exec"
         toolInvocation={toolInvocation}
-        argsText={toolInvocation.args?.command}
+        argsText={toolInvocation.input?.command}
       />
     );
   }
 
-  if (toolInvocation.toolName === "create_directory") {
+  if (toolInvocation.type === "tool-create_directory") {
     return (
       <ToolBlock
         name="create directory"
         toolInvocation={toolInvocation}
-        argsText={toolInvocation.args?.path?.split("/").slice(2).join("/")}
+        argsText={toolInvocation.input?.path?.split("/").slice(2).join("/")}
       />
     );
   }
 
-  if (toolInvocation.toolName === "update_todo_list") {
+  if (toolInvocation.type === "tool-update_todo_list") {
     return (
       <ToolBlock name="update todo list" toolInvocation={toolInvocation}>
         <div className="grid gap-2">
-          {toolInvocation.args?.items?.map?.(
+          {toolInvocation.input?.items?.map?.(
             (
               item: { description: string; completed: boolean },
               index: number
             ) => (
               <div key={index} className="flex items-center gap-3 px-4 py-1">
                 {/* Minimal sleek checkbox */}
-                <div className="relative flex-shrink-0">
+                <div className="relative flex-shrink-0 pointer-events-none">
                   <div
                     className={cn(
                       "w-4 h-4 rounded border transition-all duration-200",
@@ -113,7 +113,7 @@ export function ToolMessage({
   return (
     <ToolBlock
       toolInvocation={toolInvocation}
-      name={toolInvocation.toolName.replaceAll("_", " ")}
+      name={toolInvocation.type.replaceAll("_", " ").replace("tool-", "")}
     >
       {/* <div className="text-sm text-gray-500">
         {JSON.stringify(toolInvocation.args, null, 2)}
@@ -144,15 +144,21 @@ function DefaultContentRenderer(props: {
   );
 }
 
-function EditFileTool({ toolInvocation }: { toolInvocation: ToolInvocation }) {
+function EditFileTool({
+  toolInvocation,
+}: {
+  toolInvocation: UIMessage["parts"][number] & {
+    type: "tool-edit_file";
+  };
+}) {
   return (
     <ToolBlock
       name="edit file"
-      argsText={toolInvocation.args?.path?.split("/").slice(2).join("/")}
+      argsText={toolInvocation.input?.path?.split("/").slice(2).join("/")}
       toolInvocation={toolInvocation}
     >
       <div className="grid gap-2">
-        {toolInvocation.args?.edits?.map?.(
+        {toolInvocation.input?.edits?.map?.(
           (edit: { newText: string; oldText: string }, index: number) =>
             (edit.oldText || edit.newText) && (
               <CodeBlock key={index} className="overflow-scroll py-2">
@@ -203,18 +209,24 @@ function EditFileTool({ toolInvocation }: { toolInvocation: ToolInvocation }) {
 //   );
 // }
 
-function WriteFileTool({ toolInvocation }: { toolInvocation: ToolInvocation }) {
+function WriteFileTool({
+  toolInvocation,
+}: {
+  toolInvocation: UIMessage["parts"][number] & {
+    type: "tool-write_file";
+  };
+}) {
   return (
     <ToolBlock
       name="write file"
-      argsText={toolInvocation.args?.path?.split("/").slice(2).join("/")}
+      argsText={toolInvocation.input?.path?.split("/").slice(2).join("/")}
       toolInvocation={toolInvocation}
     >
-      {toolInvocation.args?.content && (
+      {toolInvocation.input?.content && (
         <CodeBlock className="overflow-scroll sticky bottom-0">
           <CodeBlockCode
             code={
-              toolInvocation.args?.content
+              toolInvocation.input?.content
                 ?.split("\n")
                 .slice(0, 5)
                 .join("\n") ?? ""
@@ -222,9 +234,9 @@ function WriteFileTool({ toolInvocation }: { toolInvocation: ToolInvocation }) {
             language={"tsx"}
             className="col-start-1 col-end-1 row-start-1 row-end-1 overflow-visible [&_code]:bg-green-200! bg-green-200"
           />
-          {toolInvocation.args?.content?.split("\n").length > 5 && (
+          {toolInvocation.input?.content?.split("\n").length > 5 && (
             <div className="text-green-700 px-4 text-xs pb-2 font-mono">
-              +{toolInvocation.args?.content?.split("\n").length - 5} more
+              +{toolInvocation.input?.content?.split("\n").length - 5} more
             </div>
           )}
         </CodeBlock>
@@ -234,7 +246,9 @@ function WriteFileTool({ toolInvocation }: { toolInvocation: ToolInvocation }) {
 }
 
 function ToolBlock(props: {
-  toolInvocation?: ToolInvocation;
+  toolInvocation?: UIMessage["parts"][number] & {
+    type: "tool-";
+  };
   name: string;
   argsText?: string;
   children?: React.ReactNode;
@@ -252,7 +266,7 @@ function ToolBlock(props: {
           // )}
         >
           <div className="grid translate-y-[1px]">
-            {props.toolInvocation?.state !== "result" && (
+            {props.toolInvocation?.state !== "output-available" && (
               <div
                 className={cn(
                   "border border-black w-2 h-2 rounded-full inline-block col-start-1 col-end-1 row-start-1 row-end-1",
@@ -264,12 +278,12 @@ function ToolBlock(props: {
             <div
               className={cn(
                 "border w-2 h-2 rounded-full inline-block col-start-1 col-end-1 row-start-1 row-end-1",
-                props.toolInvocation?.state === "result" &&
+                props.toolInvocation?.state === "output-available" &&
                   props.toolInvocation.result?.isError
                   ? "bg-red-500 border-red-500"
-                  : props.toolInvocation?.state === "result"
-                  ? "border-gray-400 bg-gray-400"
-                  : "border-black bg-black"
+                  : props.toolInvocation?.state === "output-available"
+                    ? "border-gray-400 bg-gray-400"
+                    : "border-black bg-black"
               )}
             ></div>
           </div>
@@ -278,9 +292,9 @@ function ToolBlock(props: {
         </div>
       </div>
       {(props.children && <div className="mb-2">{props.children}</div>) ||
-        (props.toolInvocation?.state === "result" &&
-          props.toolInvocation.result?.isError &&
-          props.toolInvocation.result?.content?.map(
+        (props.toolInvocation?.state === "output-available" &&
+          props.toolInvocation.output?.isError &&
+          props.toolInvocation.output?.content?.map(
             (content: { type: "text"; text: string }, i: number) => (
               <CodeBlock key={i} className="overflow-scroll py-2">
                 <CodeBlockCode

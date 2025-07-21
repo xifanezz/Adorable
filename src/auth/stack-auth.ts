@@ -22,6 +22,8 @@ export async function getUser() {
         freestyleIdentity: gitIdentity.id,
       },
     });
+
+    user.serverMetadata.freestyleIdentity = gitIdentity.id;
   }
 
   return {

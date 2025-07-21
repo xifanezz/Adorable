@@ -17,6 +17,10 @@ export async function getApp(id: string) {
 
   const appInfo = app[0];
 
+  if (!appInfo) {
+    throw new Error("App not found");
+  }
+
   const messages = await db
     .select()
     .from(messagesTable)

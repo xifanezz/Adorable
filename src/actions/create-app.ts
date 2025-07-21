@@ -1,76 +1,64 @@
 "use server";
 
+import { sendMessage } from "@/app/api/chat/route";
 import { getUser } from "@/auth/stack-auth";
 import { appsTable, appUsers } from "@/db/schema";
 import { db } from "@/lib/db";
 import { freestyle } from "@/lib/freestyle";
+import { templates } from "@/lib/templates";
 import { memory } from "@/mastra/agents/builder";
 
 export async function createApp({
   initialMessage,
-  baseId,
+  templateId,
 }: {
   initialMessage?: string;
-  baseId: string;
+  templateId: string;
 }) {
+  console.time("get user");
   const user = await getUser();
+  console.timeEnd("get user");
 
-  console.time("create git repo");
-  const repo = await freestyle
-    .createGitRepository({
-      name: "Unnamed App",
-      public: true,
-      source: {
-        url:
-          {
-            "nextjs-dkjfgdf":
-              "https://github.com/freestyle-sh/freestyle-base-nextjs-shadcn",
-            "vite-skdjfls":
-              "https://github.com/freestyle-sh/freestyle-base-vite-react-typescript-swc",
-            "expo-lksadfp": "https://github.com/freestyle-sh/freestyle-expo",
-          }[baseId] ??
-          "https://github.com/freestyle-sh/freestyle-base-nextjs-shadcn",
-        type: "git",
-      },
-    })
-    .catch((e) => {
-      console.error("Error creating git repository:", JSON.stringify(e));
-      throw new Error("Failed to create git repository");
-    });
+  if (!templates[templateId]) {
+    throw new Error(
+      `Template ${templateId} not found. Available templates: ${Object.keys(templates).join(", ")}`
+    );
+  }
 
-  console.log(repo);
+  console.time("git");
+  const repo = await freestyle.createGitRepository({
+    name: "Unnamed App",
+    public: true,
+    source: {
+      type: "git",
+      url: templates[templateId].repo,
+    },
+  });
   await freestyle.grantGitPermission({
     identityId: user.freestyleIdentity,
     repoId: repo.repoId,
     permission: "write",
   });
-  console.timeEnd("create git repo");
-
-  // remapping baseIds because we don't have base image for expo yet
-  const BASE_IDS = {
-    "nextjs-dkjfgdf": "nextjs-dkjfgdf",
-    "vite-skdjfls": "vite-skdjfls",
-    "expo-lksadfp": "vite-skdjfls",
-  };
-
-  console.time("start dev server");
-  await freestyle.requestDevServer({
-    repoId: repo.repoId,
-    baseId: BASE_IDS[baseId],
-  });
-  console.timeEnd("start dev server");
 
   const token = await freestyle.createGitAccessToken({
     identityId: user.freestyleIdentity,
   });
 
+  console.timeEnd("git");
+
+  console.time("dev server");
+  const { mcpEphemeralUrl } = await freestyle.requestDevServer({
+    repoId: repo.repoId,
+  });
+  console.timeEnd("dev server");
+
+  console.time("database: create app");
   const app = await db.transaction(async (tx) => {
     const appInsertion = await tx
       .insert(appsTable)
       .values({
         gitRepo: repo.repoId,
         name: initialMessage,
-        baseId: baseId,
       })
       .returning();
 
@@ -88,11 +76,29 @@ export async function createApp({
 
     return appInsertion[0];
   });
+  console.timeEnd("database: create app");
 
+  console.time("mastra: create thread");
   await memory.createThread({
     threadId: app.id,
     resourceId: app.id,
   });
+  console.timeEnd("mastra: create thread");
+
+  if (initialMessage) {
+    console.time("send initial message");
+    await sendMessage(app.id, mcpEphemeralUrl, {
+      id: crypto.randomUUID(),
+      parts: [
+        {
+          text: initialMessage,
+          type: "text",
+        },
+      ],
+      role: "user",
+    });
+    console.timeEnd("send initial message");
+  }
 
   return app;
 }

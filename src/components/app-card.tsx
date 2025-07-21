@@ -10,7 +10,6 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { Trash, ExternalLink, MoreVertical } from "lucide-react";
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { deleteApp } from "@/actions/delete-app";
 import { toast } from "sonner";
@@ -24,7 +23,6 @@ type AppCardProps = {
 
 export function AppCard({ id, name, createdAt, onDelete }: AppCardProps) {
   const router = useRouter();
-  const [isOpen, setIsOpen] = useState(false);
 
   const handleOpen = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -46,7 +44,9 @@ export function AppCard({ id, name, createdAt, onDelete }: AppCardProps) {
     <Card className="p-3 sm:p-4 border-b border rounded-md h-32 sm:h-36 relative w-full">
       <Link href={`/app/${id}`} className="cursor-pointer block">
         <CardHeader className="p-0">
-          <CardTitle className="text-sm sm:text-base truncate">{name}</CardTitle>
+          <CardTitle className="text-sm sm:text-base truncate">
+            {name}
+          </CardTitle>
           <CardDescription className="text-xs sm:text-sm">
             Created {createdAt.toLocaleDateString()}
           </CardDescription>

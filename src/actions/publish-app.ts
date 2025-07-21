@@ -85,6 +85,11 @@ export async function publishApp({ appId }: { appId: string }) {
     }
   );
 
+  if (deployment.message) {
+    console.error("Deployment failed:", deployment.message);
+    throw new Error(`Deployment failed`);
+  }
+
   db.insert(appDeployments).values({
     appId: app.app.id,
     deploymentId: deployment.deploymentId,

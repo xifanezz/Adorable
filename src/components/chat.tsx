@@ -1,72 +1,103 @@
 "use client";
 
-import { useChat } from "@ai-sdk/react";
+import Image from "next/image";
+
 import { PromptInputBasic } from "./chatinput";
 import { Markdown } from "./ui/markdown";
-import { ChangeEvent, useEffect } from "react";
+import { useState } from "react";
 import { ChatContainer } from "./ui/chat-container";
-import { Message } from "ai";
+import { UIMessage } from "ai";
 import { ToolMessage } from "./tools";
+import { useQuery } from "@tanstack/react-query";
+import { chatState } from "@/actions/chat-streaming";
+import { CompressedImage } from "@/lib/image-compression";
+import { useChatSafe } from "./use-chat";
 
 export default function Chat(props: {
   appId: string;
-  initialMessages: Message[];
+  initialMessages: UIMessage[];
   isLoading?: boolean;
   topBar?: React.ReactNode;
-  unsentMessage?: string;
+  running: boolean;
 }) {
-  const { messages, handleSubmit, input, handleInputChange, status, append } =
-    useChat({
-      initialMessages: props.initialMessages,
-      generateId: () => {
-        return "cs-" + crypto.randomUUID();
-      },
-      sendExtraMessageFields: true,
-      headers: {
-        "Adorable-App-Id": props.appId,
-      },
-      api: "/api/chat",
-      experimental_prepareRequestBody: (request) => {
-        const lastMessage = request.messages.at(-1) ?? null;
-        return {
-          message: lastMessage,
-          threadId: props.appId,
-          resourceId: props.appId,
-        };
-      },
-    });
-
-  useEffect(() => {
-    const url = new URL(window.location.href);
-    const unsentMessageRaw = url.searchParams.get("unsentMessage");
-    url.searchParams.delete("unsentMessage");
-
-    const unsentMessage = unsentMessageRaw
-      ? decodeURIComponent(unsentMessageRaw)
-      : null;
-
-    if (unsentMessage) {
-      window.history.replaceState(undefined, "", url.toString());
-
-      append({
-        content: unsentMessage,
-        role: "user",
-      });
-    }
+  const { data: chat } = useQuery({
+    queryKey: ["stream", props.appId],
+    queryFn: async () => {
+      return chatState(props.appId);
+    },
+    refetchInterval: 1000,
+    refetchOnWindowFocus: true,
   });
 
-  const onValueChange = (value: string) => {
-    handleInputChange({
-      target: { value },
-    } as ChangeEvent<HTMLTextAreaElement>);
-  };
+  const { messages, sendMessage } = useChatSafe({
+    messages: props.initialMessages,
+    id: props.appId,
+    resume: props.running && chat?.state === "running",
+  });
 
-  const onSubmit = (e?: Event) => {
+  const [input, setInput] = useState("");
+
+  const onSubmit = (e?: React.FormEvent<HTMLFormElement>) => {
     if (e?.preventDefault) {
       e.preventDefault();
     }
-    handleSubmit(e);
+    sendMessage(
+      {
+        parts: [
+          {
+            type: "text",
+            text: input,
+          },
+        ],
+      },
+      {
+        headers: {
+          "Adorable-App-Id": props.appId,
+        },
+      }
+    );
+    setInput("");
   };
+
+  const onSubmitWithImages = (text: string, images: CompressedImage[]) => {
+    const parts: Parameters<typeof sendMessage>[0]["parts"] = [];
+
+    if (text.trim()) {
+      parts.push({
+        type: "text",
+        text: text,
+      });
+    }
+
+    images.forEach((image) => {
+      parts.push({
+        type: "file",
+        mediaType: image.mimeType,
+        url: image.data,
+      });
+    });
+
+    sendMessage(
+      {
+        parts,
+      },
+      {
+        headers: {
+          "Adorable-App-Id": props.appId,
+        },
+      }
+    );
+    setInput("");
+  };
+
+  async function handleStop() {
+    await fetch("/api/chat/" + props.appId + "/stream", {
+      method: "DELETE",
+      headers: {
+        "Adorable-App-Id": props.appId,
+      },
+    });
+  }
 
   return (
     <div
@@ -79,31 +110,54 @@ export default function Chat(props: {
         style={{ overflowAnchor: "auto" }}
       >
         <ChatContainer autoScroll>
-          {messages.map((message) => (
+          {messages.map((message: any) => (
             <MessageBody key={message.id} message={message} />
           ))}
         </ChatContainer>
       </div>
       <div className="flex-shrink-0 p-3 transition-all bg-background md:backdrop-blur-sm">
         <PromptInputBasic
-          input={input || ""}
+          stop={handleStop}
+          input={input}
+          onValueChange={(value) => {
+            setInput(value);
+          }}
           onSubmit={onSubmit}
-          onValueChange={onValueChange}
-          isGenerating={
-            props.isLoading || status === "streaming" || status === "submitted"
-          }
+          onSubmitWithImages={onSubmitWithImages}
+          isGenerating={props.isLoading || chat?.state === "running"}
         />
       </div>
     </div>
   );
 }
 
-function MessageBody({ message }: { message: Message }) {
+function MessageBody({ message }: { message: any }) {
   if (message.role === "user") {
     return (
       <div className="flex justify-end py-1 mb-4">
         <div className="bg-neutral-200 dark:bg-neutral-700 rounded-xl px-4 py-1 max-w-[80%] ml-auto">
-          {message.content}
+          {message.parts.map((part: any, index: number) => {
+            if (part.type === "text") {
+              return <div key={index}>{part.text}</div>;
+            } else if (
+              part.type === "file" &&
+              part.mediaType?.startsWith("image/")
+            ) {
+              return (
+                <div key={index} className="mt-2">
+                  <Image
+                    src={part.url as string}
+                    alt="User uploaded image"
+                    width={200}
+                    height={200}
+                    className="max-w-full h-auto rounded"
+                    style={{ maxHeight: "200px" }}
+                  />
+                </div>
+              );
+            }
+            return <div key={index}>unexpected message</div>;
+          })}
         </div>
       </div>
     );
@@ -112,7 +166,7 @@ function MessageBody({ message }: { message: Message }) {
   if (Array.isArray(message.parts) && message.parts.length !== 0) {
     return (
       <div className="mb-4">
-        {message.parts.map((part, index) => {
+        {message.parts.map((part: any, index: any) => {
           if (part.type === "text") {
             return (
               <div key={index} className="mb-4">
@@ -123,7 +177,7 @@ function MessageBody({ message }: { message: Message }) {
             );
           }
 
-          if (part.type === "tool-invocation") {
+          if (part.type.startsWith("tool-")) {
             // if (
             //   part.toolInvocation.state === "result" &&
             //   part.toolInvocation.result.isError
@@ -148,9 +202,7 @@ function MessageBody({ message }: { message: Message }) {
             //   message.parts!.length - 1 == index &&
             //   part.toolInvocation.state !== "result"
             // ) {
-            return (
-              <ToolMessage key={index} toolInvocation={part.toolInvocation} />
-            );
+            return <ToolMessage key={index} toolInvocation={part} />;
             // } else {
             //   return undefined;
             // }
@@ -160,10 +212,14 @@ function MessageBody({ message }: { message: Message }) {
     );
   }
 
-  if (message.content) {
+  if (message.parts) {
     return (
       <Markdown className="prose prose-sm dark:prose-invert max-w-none">
-        {message.content}
+        {message.parts
+          .map((part: any) =>
+            part.type === "text" ? part.text : "[something went wrong]"
+          )
+          .join("")}
       </Markdown>
     );
   }

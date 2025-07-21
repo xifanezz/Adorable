@@ -3,15 +3,19 @@ import { freestyle } from "@/lib/freestyle";
 import { getAppIdFromHeaders } from "@/lib/utils";
 import { MCPClient } from "@mastra/mcp";
 import { builderAgent } from "@/mastra/agents/builder";
-import { deleteStream, getStream, setStream } from "@/lib/streams";
-import { CoreMessage } from "@mastra/core";
+import { UIMessage } from "ai";
 
 // "fix" mastra mcp bug
 import { EventEmitter } from "events";
-
+import { getAbortCallback, setStream, stopStream } from "@/lib/streams";
 EventEmitter.defaultMaxListeners = 1000;
 
-export async function POST(req: Request) {
+import { NextRequest } from "next/server";
+import { redisPublisher } from "@/lib/redis";
+import { MessageList } from "@mastra/core/agent";
+
+export async function POST(req: NextRequest) {
+  console.log("creating new chat stream");
   const appId = getAppIdFromHeaders(req);
 
   if (!appId) {
@@ -23,129 +27,142 @@ export async function POST(req: Request) {
     return new Response("App not found", { status: 404 });
   }
 
-  const existingStream = await getStream(appId);
-  if (existingStream) {
-    const [stream1, stream2] = streams[appId].readable.tee();
-    streams[appId] = { readable: stream2, prompt: streams[appId].prompt };
-    return new Response(stream1, {
-      headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-      },
-    });
+  const streamState = await redisPublisher.get(
+    "app:" + appId + ":stream-state"
+  );
+
+  if (streamState === "running") {
+    console.log("Stopping previous stream for appId:", appId);
+    stopStream(appId);
+
+    // Wait until stream state is cleared
+    const maxAttempts = 60;
+    let attempts = 0;
+    while (attempts < maxAttempts) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      const updatedState = await redisPublisher.get(
+        "app:" + appId + ":stream-state"
+      );
+      if (updatedState !== "running") {
+        break;
+      }
+      attempts++;
+    }
+
+    // If stream is still running after max attempts, return an error
+    if (attempts >= maxAttempts) {
+      await redisPublisher.del(`app:${appId}:stream-state`);
+      return new Response(
+        "Previous stream is still shutting down, please try again",
+        { status: 429 }
+      );
+    }
   }
 
-  const { mcpEphemeralUrl, ephemeralUrl } = await freestyle.requestDevServer({
+  const { messages }: { messages: UIMessage[] } = await req.json();
+
+  const { mcpEphemeralUrl } = await freestyle.requestDevServer({
     repoId: app.info.gitRepo,
-    baseId: app.info.baseId,
   });
 
-  const { message }: { message: CoreMessage } = await req.json();
+  const resumableStream = await sendMessage(
+    appId,
+    mcpEphemeralUrl,
+    messages.at(-1)!
+  );
 
+  return resumableStream.response();
+}
+
+export async function sendMessage(
+  appId: string,
+  mcpUrl: string,
+  message: UIMessage
+) {
   const mcp = new MCPClient({
     id: crypto.randomUUID(),
     servers: {
       dev_server: {
-        url: new URL(mcpEphemeralUrl),
+        url: new URL(mcpUrl),
       },
     },
   });
 
   const toolsets = await mcp.getToolsets();
 
-  const rootStream = new TransformStream();
-
-  let fixCount = 0;
-  async function runAgent(prompt: Parameters<typeof builderAgent.stream>[0]) {
-    const stream = await builderAgent.stream(prompt, {
-      threadId: appId,
-      resourceId: appId,
-      maxSteps: 100,
-      maxRetries: 0,
-      maxTokens: 64000,
-
-      // experimental_continueSteps: true,
-      toolsets,
-      onError: async (error) => {
-        await mcp.disconnect();
-        console.error("Error:", error);
+  await (
+    await builderAgent.getMemory()
+  )?.saveMessages({
+    messages: [
+      {
+        content: {
+          parts: message.parts,
+          format: 3,
+        },
+        role: "user",
+        createdAt: new Date(),
+        id: message.id,
+        threadId: appId,
+        type: "text",
+        resourceId: appId,
       },
-      onFinish: async (res) => {
-        deleteStream(appId!);
-        console.log("Finished with reason:", res.finishReason);
-
-        if (res.finishReason === "tool-calls" && fixCount < 10) {
-          fixCount++;
-          runAgent([
-            {
-              role: "user",
-              content: "continue",
-            },
-          ]);
-
-          return;
-        }
-
-        const pageRes = await fetch(ephemeralUrl);
-
-        if (!pageRes.ok && fixCount < 10) {
-          fixCount++;
-          console.log("the page errored");
-          runAgent([
-            {
-              role: "user",
-              content: "The page returned 500. Please fix it.",
-            },
-          ]);
-          return;
-        }
-
-        if (fixCount == 10) {
-          console.log("reached max fix count, will not retry anymore");
-        } else {
-          console.log("no detected errors. ending stream");
-        }
-
-        await mcp.disconnect();
-        // todo: better solution
-        await rootStream.writable.abort();
-        console.log("Stream ended");
-      },
-      toolCallStreaming: true,
-    });
-
-    const dataStream = stream.toDataStream();
-    dataStream.pipeThrough(rootStream, {
-      preventClose: true,
-    });
-  }
-
-  runAgent(message.content);
-
-  const [stream1, stream2] = rootStream.readable.tee();
-  await setStream(appId, stream2, message.content);
-
-  return new Response(stream1, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-    },
+    ],
   });
-}
 
-export async function GET(req: Request) {
-  const appId = getAppIdFromHeaders(req);
-  if (!appId) {
-    return new Response("Missing App Id header", { status: 400 });
-  }
+  const controller = new AbortController();
+  let shouldAbort = false;
+  await getAbortCallback(appId, () => {
+    shouldAbort = true;
+  });
 
-  return new Response(
-    JSON.stringify({
-      stream: streams[appId] && {
-        prompt: streams[appId].prompt,
-      },
-    })
-  );
+  let lastKeepAlive = Date.now();
+
+  const messageList = new MessageList({
+    resourceId: appId,
+    threadId: appId,
+  });
+
+  const stream = await builderAgent.stream([], {
+    threadId: appId,
+    resourceId: appId,
+    maxSteps: 100,
+    maxRetries: 0,
+    maxOutputTokens: 64000,
+    toolsets,
+    async onChunk() {
+      if (Date.now() - lastKeepAlive > 5000) {
+        lastKeepAlive = Date.now();
+        redisPublisher.set(`app:${appId}:stream-state`, "running", {
+          EX: 15,
+        });
+      }
+    },
+    async onStepFinish(step) {
+      messageList.add(step.response.messages, "response");
+
+      if (shouldAbort) {
+        await redisPublisher.del(`app:${appId}:stream-state`);
+        controller.abort("Aborted stream after step finish");
+        const messages = messageList.drainUnsavedMessages();
+        console.log(messages);
+        await builderAgent.getMemory()?.saveMessages({
+          messages,
+        });
+      }
+    },
+    onError: async (error) => {
+      await mcp.disconnect();
+      await redisPublisher.del(`app:${appId}:stream-state`);
+      console.error("Error:", error);
+    },
+    onFinish: async () => {
+      await redisPublisher.del(`app:${appId}:stream-state`);
+      await mcp.disconnect();
+    },
+    abortSignal: controller.signal,
+  });
+
+  console.log("Stream created for appId:", appId, "with prompt:", message);
+
+  return await setStream(appId, message, stream);
 }

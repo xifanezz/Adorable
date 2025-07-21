@@ -21,13 +21,13 @@ export const metadata: Metadata = {
   title: "Adorable",
   description: "Open Source AI App Builder",
   manifest: "/manifest.json",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-    viewportFit: "cover"
-  }
+  // viewport: {
+  //   width: "device-width",
+  //   initialScale: 1,
+  //   maximumScale: 1,
+  //   userScalable: false,
+  //   viewportFit: "cover",
+  // },
 };
 
 export default function RootLayout({
@@ -37,6 +37,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      {/* <head>
+        <script
+          crossOrigin="anonymous"
+          src="//unpkg.com/react-scan/dist/auto.global.js"
+        />
+      </head> */}
       <body
         className={cn(
           `${geistSans.variable} ${geistMono.variable} antialiased`

@@ -7,7 +7,7 @@ import {
   pgEnum,
 } from "drizzle-orm/pg-core";
 
-import type { Message } from "ai";
+import type { UIMessage } from "ai";
 
 export const appsTable = pgTable("apps", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -43,7 +43,7 @@ export const messagesTable = pgTable("messages", {
   appId: uuid("app_id")
     .notNull()
     .references(() => appsTable.id),
-  message: json("message").notNull().$type<Message>(),
+  message: json("message").notNull().$type<UIMessage>(),
 });
 
 export const appDeployments = pgTable("app_deployments", {
