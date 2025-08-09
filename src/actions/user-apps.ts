@@ -2,7 +2,7 @@
 
 import { getUser } from "@/auth/stack-auth";
 import { appsTable, appUsers } from "@/db/schema";
-import { db } from "@/lib/db";
+import { db } from "@/db/schema";
 import { desc, eq } from "drizzle-orm";
 
 export async function getUserApps() {

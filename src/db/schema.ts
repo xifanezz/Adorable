@@ -6,8 +6,11 @@ import {
   json,
   pgEnum,
 } from "drizzle-orm/pg-core";
+import { drizzle } from "drizzle-orm/node-postgres";
 
 import type { UIMessage } from "ai";
+
+export const db = drizzle(process.env.DATABASE_URL!);
 
 export const appsTable = pgTable("apps", {
   id: uuid("id").primaryKey().defaultRandom(),
