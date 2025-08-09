@@ -136,65 +136,6 @@ export class AIService {
   }
 
   /**
-   * Create a simple chat completion (for non-streaming use cases)
-   *
-   * This method is useful when you just want the final text response
-   * without dealing with streams or UI components.
-   *
-   * @param agent - The Mastra agent to use for AI interactions
-   * @param appId - The application ID
-   * @param mcpUrl - The MCP server URL
-   * @param fs - The Freestyle filesystem
-   * @param message - The message to send to the AI
-   * @param options - Optional configuration for the AI interaction
-   * @returns Promise<string> - The final text response from the AI
-   *
-   * @example
-   * ```typescript
-   * const response = await AIService.chatCompletion(builderAgent, appId, mcpUrl, fs, {
-   *   id: crypto.randomUUID(),
-   *   parts: [{ type: "text", text: "What's 2+2?" }],
-   *   role: "user"
-   * });
-   * console.log(response); // "2+2 equals 4"
-   * ```
-   */
-  static async chatCompletion(
-    agent: Agent,
-    appId: string,
-    mcpUrl: string,
-    fs: FreestyleDevServerFilesystem,
-    message: UIMessage,
-    options?: Partial<AIStreamOptions>
-  ): Promise<string> {
-    const response = await this.sendMessage(
-      agent,
-      appId,
-      mcpUrl,
-      fs,
-      message,
-      options
-    );
-
-    // Convert stream to text response
-    const reader = response.stream
-      .toUIMessageStreamResponse()
-      .body?.getReader();
-    if (!reader) {
-      throw new Error("Failed to read stream response");
-    }
-
-    let result = "";
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      result += new TextDecoder().decode(value);
-    }
-
-    return result;
-  }
-
-  /**
    * Get the AI agent instance for advanced use cases
    *
    * Use this when you need direct access to the underlying agent
