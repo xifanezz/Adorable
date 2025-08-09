@@ -3,7 +3,7 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { Agent } from "@mastra/core/agent";
 import { Memory } from "@mastra/memory";
 import { PostgresStore, PgVector } from "@mastra/pg";
-import { todoTool } from "@/lib/todo-tool";
+import { todoTool } from "@/tools/todo-tool";
 
 export const memory = new Memory({
   options: {
