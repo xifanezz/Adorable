@@ -3,6 +3,7 @@ import { after } from "next/server";
 import { createResumableStreamContext } from "resumable-stream";
 import { redis, redisPublisher } from "./redis";
 import { AIService } from "./ai-service";
+import { FreestyleDevServerFilesystem } from "freestyle-sandboxes";
 
 const streamContext = createResumableStreamContext({
   waitUntil: after,
@@ -215,6 +216,8 @@ export async function handleStreamLifecycle(
 export async function sendMessageWithStreaming(
   appId: string,
   mcpUrl: string,
+  fs: FreestyleDevServerFilesystem,
+
   message: UIMessage
 ) {
   const controller = new AbortController();
@@ -228,7 +231,7 @@ export async function sendMessageWithStreaming(
   let lastKeepAlive = Date.now();
 
   // Use the AI service to handle the AI interaction
-  const aiResponse = await AIService.sendMessage(appId, mcpUrl, message, {
+  const aiResponse = await AIService.sendMessage(appId, mcpUrl, fs, message, {
     threadId: appId,
     resourceId: appId,
     maxSteps: 100,

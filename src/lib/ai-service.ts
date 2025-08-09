@@ -2,6 +2,7 @@ import { UIMessage } from "ai";
 import { MCPClient } from "@mastra/mcp";
 import { builderAgent } from "@/mastra/agents/builder";
 import { MessageList } from "@mastra/core/agent";
+import { FreestyleDevServerFilesystem } from "freestyle-sandboxes";
 
 export interface AIStreamOptions {
   threadId: string;
@@ -94,6 +95,7 @@ export class AIService {
   static async sendMessage(
     appId: string,
     mcpUrl: string,
+    fs: FreestyleDevServerFilesystem,
     message: UIMessage,
     options?: Partial<AIStreamOptions>
   ): Promise<AIResponse> {
@@ -192,10 +194,17 @@ export class AIService {
   static async chatCompletion(
     appId: string,
     mcpUrl: string,
+    fs: FreestyleDevServerFilesystem,
     message: UIMessage,
     options?: Partial<AIStreamOptions>
   ): Promise<string> {
-    const response = await this.sendMessage(appId, mcpUrl, message, options);
+    const response = await this.sendMessage(
+      appId,
+      mcpUrl,
+      fs,
+      message,
+      options
+    );
 
     // Convert stream to text response
     const reader = response.stream
