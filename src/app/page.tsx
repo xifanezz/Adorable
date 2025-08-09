@@ -24,8 +24,6 @@ export default function Home() {
   const handleSubmit = async () => {
     setIsLoading(true);
 
-    // window.location = `http://localhost:3000/app/new?message=${encodeURIComponent(prompt)}&template=${framework}`;
-
     router.push(
       `/app/new?message=${encodeURIComponent(prompt)}&template=${framework}`
     );

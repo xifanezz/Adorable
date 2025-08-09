@@ -2,7 +2,7 @@
 
 import { getUser } from "@/auth/stack-auth";
 import { appDeployments, appsTable, appUsers } from "@/db/schema";
-import { db } from "@/lib/db";
+import { db } from "@/db/schema";
 import { freestyle } from "@/lib/freestyle";
 import { eq, sql } from "drizzle-orm";
 import {
@@ -94,7 +94,7 @@ export async function publishApp({ appId }: { appId: string }) {
     appId: app.app.id,
     deploymentId: deployment.deploymentId,
     createdAt: new Date(),
-    commit: "latest", //TODO: commit sha
+    commit: "latest",
   });
 
   return true;

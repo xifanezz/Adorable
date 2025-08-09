@@ -3,7 +3,7 @@
 import { getApp } from "@/actions/get-app";
 import AppWrapper from "../../../components/app-wrapper";
 import { freestyle } from "@/lib/freestyle";
-import { db } from "@/lib/db";
+import { db } from "@/db/schema";
 import { appUsers } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getUser } from "@/auth/stack-auth";

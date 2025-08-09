@@ -1,7 +1,7 @@
 "use server";
 
 import { appsTable, messagesTable } from "@/db/schema";
-import { db } from "@/lib/db";
+import { db } from "@/db/schema";
 import { asc, eq } from "drizzle-orm";
 
 export async function getApp(id: string) {
