@@ -4,6 +4,7 @@ import { createResumableStreamContext } from "resumable-stream";
 import { redis, redisPublisher } from "./redis";
 import { AIService } from "./ai-service";
 import { Agent } from "@mastra/core/agent";
+import { FreestyleDevServerFilesystem } from "freestyle-sandboxes";
 
 const streamContext = createResumableStreamContext({
   waitUntil: after,
@@ -223,6 +224,7 @@ export async function sendMessageWithStreaming(
   agent: Agent,
   appId: string,
   mcpUrl: string,
+  fs: FreestyleDevServerFilesystem,
   message: UIMessage
 ) {
   const controller = new AbortController();
@@ -240,6 +242,7 @@ export async function sendMessageWithStreaming(
     agent,
     appId,
     mcpUrl,
+    fs,
     message,
     {
       threadId: appId,

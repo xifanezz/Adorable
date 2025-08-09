@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
 
   const { messages }: { messages: UIMessage[] } = await req.json();
 
-  const { mcpEphemeralUrl } = await freestyle.requestDevServer({
+  const { mcpEphemeralUrl, fs } = await freestyle.requestDevServer({
     repoId: app.info.gitRepo,
   });
 
@@ -56,6 +56,7 @@ export async function POST(req: NextRequest) {
     builderAgent,
     appId,
     mcpEphemeralUrl,
+    fs,
     messages.at(-1)!
   );
 

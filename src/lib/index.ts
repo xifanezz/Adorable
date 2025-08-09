@@ -28,7 +28,7 @@ export {
 export { builderAgent } from "@/mastra/agents/builder";
 
 // Todo tool for task management
-export { todoTool } from "./todo-tool";
+export { todoTool } from "../tools/todo-tool";
 
 // Type exports for TypeScript
 export type { UIMessage } from "ai";
