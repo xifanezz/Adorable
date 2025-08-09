@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="icon.png" alt="description" width="100">
+  <img src="icon.png" alt="description" width="75">
 </p>
 
 # Adorable
