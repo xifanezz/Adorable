@@ -3,6 +3,7 @@ import { after } from "next/server";
 import { createResumableStreamContext } from "resumable-stream";
 import { redis, redisPublisher } from "./redis";
 import { AIService } from "./ai-service";
+import { Agent } from "@mastra/core/agent";
 
 const streamContext = createResumableStreamContext({
   waitUntil: after,
@@ -213,6 +214,7 @@ export async function handleStreamLifecycle(
  * This is the main interface that developers should use
  */
 export async function sendMessageWithStreaming(
+  agent: Agent,
   appId: string,
   mcpUrl: string,
   message: UIMessage
@@ -228,37 +230,43 @@ export async function sendMessageWithStreaming(
   let lastKeepAlive = Date.now();
 
   // Use the AI service to handle the AI interaction
-  const aiResponse = await AIService.sendMessage(appId, mcpUrl, message, {
-    threadId: appId,
-    resourceId: appId,
-    maxSteps: 100,
-    maxRetries: 0,
-    maxOutputTokens: 64000,
-    async onChunk() {
-      if (Date.now() - lastKeepAlive > 5000) {
-        lastKeepAlive = Date.now();
-        await updateKeepAlive(appId);
-      }
-    },
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async onStepFinish(_step: { response: { messages: unknown[] } }) {
-      if (shouldAbort) {
+  const aiResponse = await AIService.sendMessage(
+    agent,
+    appId,
+    mcpUrl,
+    message,
+    {
+      threadId: appId,
+      resourceId: appId,
+      maxSteps: 100,
+      maxRetries: 0,
+      maxOutputTokens: 64000,
+      async onChunk() {
+        if (Date.now() - lastKeepAlive > 5000) {
+          lastKeepAlive = Date.now();
+          await updateKeepAlive(appId);
+        }
+      },
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      async onStepFinish(_step: { response: { messages: unknown[] } }) {
+        if (shouldAbort) {
+          await handleStreamLifecycle(appId, "error");
+          controller.abort("Aborted stream after step finish");
+          const messages = await AIService.getUnsavedMessages(appId);
+          console.log(messages);
+          await AIService.saveMessagesToMemory(agent, appId, messages);
+        }
+      },
+      onError: async (error: { error: unknown }) => {
         await handleStreamLifecycle(appId, "error");
-        controller.abort("Aborted stream after step finish");
-        const messages = await AIService.getUnsavedMessages(appId);
-        console.log(messages);
-        await AIService.saveMessagesToMemory(appId, messages);
-      }
-    },
-    onError: async (error: { error: unknown }) => {
-      await handleStreamLifecycle(appId, "error");
-      console.error("Error:", error);
-    },
-    onFinish: async () => {
-      await handleStreamLifecycle(appId, "finish");
-    },
-    abortSignal: controller.signal,
-  });
+        console.error("Error:", error);
+      },
+      onFinish: async () => {
+        await handleStreamLifecycle(appId, "finish");
+      },
+      abortSignal: controller.signal,
+    }
+  );
 
   console.log("Stream created for appId:", appId, "with prompt:", message);
 

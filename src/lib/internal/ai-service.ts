@@ -1,6 +1,6 @@
 import { UIMessage } from "ai";
 import { MCPClient } from "@mastra/mcp";
-import { builderAgent } from "@/mastra/agents/builder";
+import { Agent } from "@mastra/core/agent";
 import { MessageList } from "@mastra/core/agent";
 
 export interface AIStreamOptions {
@@ -24,45 +24,6 @@ export interface AIResponse {
   };
 }
 
-/**
- * AI Service - Clean interface for AI interactions
- *
- * This is the main interface that developers should use to interact with AI.
- * All the complex stream plumbing, Redis management, and Mastra setup is hidden away.
- * The message list and MCP client management is handled internally - developers only
- * need to think about prompting and tools.
- *
- * ## Quick Start
- *
- * ```typescript
- * // Simple message sending
- * const response = await AIService.sendMessage(appId, mcpUrl, {
- *   id: crypto.randomUUID(),
- *   parts: [{ type: "text", text: "Hello AI!" }],
- *   role: "user"
- * });
- *
- * // Get the stream for UI
- * const stream = response.stream;
- *
- * // Or use the simple chat completion
- * const text = await AIService.chatCompletion(appId, mcpUrl, message);
- * ```
- *
- * ## Advanced Usage
- *
- * ```typescript
- * // Custom options
- * const response = await AIService.sendMessage(appId, mcpUrl, message, {
- *   maxSteps: 50,
- *   maxOutputTokens: 32000,
- *   onChunk: () => console.log("Chunk received"),
- *   onStepFinish: (step) => console.log("Step finished:", step),
- *   onError: (error) => console.error("Error:", error),
- *   onFinish: () => console.log("Finished")
- * });
- * ```
- */
 export class AIService {
   /**
    * Send a message to the AI and get a stream response
@@ -73,6 +34,7 @@ export class AIService {
    *
    * All message list management and MCP client lifecycle is handled internally.
    *
+   * @param agent - The Mastra agent to use for AI interactions
    * @param appId - The application ID
    * @param mcpUrl - The MCP server URL
    * @param message - The message to send to the AI
@@ -81,7 +43,9 @@ export class AIService {
    *
    * @example
    * ```typescript
-   * const response = await AIService.sendMessage(appId, mcpUrl, {
+   * import { builderAgent } from "@/mastra/agents/builder";
+   *
+   * const response = await AIService.sendMessage(builderAgent, appId, mcpUrl, {
    *   id: crypto.randomUUID(),
    *   parts: [{ type: "text", text: "Build me a todo app" }],
    *   role: "user"
@@ -92,6 +56,7 @@ export class AIService {
    * ```
    */
   static async sendMessage(
+    agent: Agent,
     appId: string,
     mcpUrl: string,
     message: UIMessage,
@@ -109,7 +74,7 @@ export class AIService {
     const toolsets = await mcp.getToolsets();
 
     // Save message to memory
-    const memory = await builderAgent.getMemory();
+    const memory = await agent.getMemory();
     if (memory) {
       await memory.saveMessages({
         messages: [
@@ -134,7 +99,7 @@ export class AIService {
       threadId: appId,
     });
 
-    const stream = await builderAgent.stream([], {
+    const stream = await agent.stream([], {
       threadId: appId,
       resourceId: appId,
       maxSteps: options?.maxSteps ?? 100,
@@ -168,78 +133,6 @@ export class AIService {
   }
 
   /**
-   * Create a simple chat completion (for non-streaming use cases)
-   *
-   * This method is useful when you just want the final text response
-   * without dealing with streams or UI components.
-   *
-   * @param appId - The application ID
-   * @param mcpUrl - The MCP server URL
-   * @param message - The message to send to the AI
-   * @param options - Optional configuration for the AI interaction
-   * @returns Promise<string> - The final text response from the AI
-   *
-   * @example
-   * ```typescript
-   * const response = await AIService.chatCompletion(appId, mcpUrl, {
-   *   id: crypto.randomUUID(),
-   *   parts: [{ type: "text", text: "What's 2+2?" }],
-   *   role: "user"
-   * });
-   * console.log(response); // "2+2 equals 4"
-   * ```
-   */
-  static async chatCompletion(
-    appId: string,
-    mcpUrl: string,
-    message: UIMessage,
-    options?: Partial<AIStreamOptions>
-  ): Promise<string> {
-    const response = await this.sendMessage(appId, mcpUrl, message, options);
-
-    // Convert stream to text response
-    const reader = response.stream
-      .toUIMessageStreamResponse()
-      .body?.getReader();
-    if (!reader) {
-      throw new Error("Failed to read stream response");
-    }
-
-    let result = "";
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      result += new TextDecoder().decode(value);
-    }
-
-    return result;
-  }
-
-  /**
-   * Get the AI agent instance for advanced use cases
-   *
-   * Use this when you need direct access to the underlying agent
-   * for advanced customization.
-   *
-   * @returns The builder agent instance
-   */
-  static getAgent() {
-    return builderAgent;
-  }
-
-  /**
-   * Get the memory instance for direct memory operations
-   *
-   * Use this when you need to directly interact with the AI's memory
-   * for saving/loading messages or other memory operations.
-   *
-   * @returns Promise<Memory | undefined> - The memory instance
-   */
-  static async getMemory() {
-    return await builderAgent.getMemory();
-  }
-
-  /**
    * Get unsaved messages from the current conversation
    *
    * This is a utility method for when you need to access the current
@@ -262,15 +155,17 @@ export class AIService {
    * This is a utility method for when you need to manually save messages.
    * The service handles this automatically in most cases.
    *
+   * @param agent - The Mastra agent to use for memory operations
    * @param appId - The application ID
    * @param messages - Array of messages to save
    * @returns Promise<void>
    */
   static async saveMessagesToMemory(
+    agent: Agent,
     appId: string,
     messages: unknown[]
   ): Promise<void> {
-    const memory = await builderAgent.getMemory();
+    const memory = await agent.getMemory();
     if (memory) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await memory.saveMessages({ messages: messages as any });

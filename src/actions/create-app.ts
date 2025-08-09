@@ -1,12 +1,12 @@
 "use server";
 
-import { AIService } from "@/lib/ai-service";
+import { AIService } from "@/lib/internal/ai-service";
 import { getUser } from "@/auth/stack-auth";
 import { appsTable, appUsers } from "@/db/schema";
 import { db } from "@/db/schema";
 import { freestyle } from "@/lib/freestyle";
 import { templates } from "@/lib/templates";
-import { memory } from "@/mastra/agents/builder";
+import { memory, builderAgent } from "@/mastra/agents/builder";
 
 export async function createApp({
   initialMessage,
@@ -87,7 +87,7 @@ export async function createApp({
 
   if (initialMessage) {
     console.time("send initial message");
-    await AIService.sendMessage(app.id, mcpEphemeralUrl, {
+    await AIService.sendMessage(builderAgent, app.id, mcpEphemeralUrl, {
       id: crypto.randomUUID(),
       parts: [
         {
