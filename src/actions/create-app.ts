@@ -1,12 +1,12 @@
 "use server";
 
-import { AIService } from "@/lib/internal/ai-service";
 import { getUser } from "@/auth/stack-auth";
 import { appsTable, appUsers } from "@/db/schema";
 import { db } from "@/db/schema";
 import { freestyle } from "@/lib/freestyle";
 import { templates } from "@/lib/templates";
 import { memory, builderAgent } from "@/mastra/agents/builder";
+import { sendMessageWithStreaming } from "@/lib/internal/stream-manager";
 
 export async function createApp({
   initialMessage,
@@ -47,7 +47,7 @@ export async function createApp({
   console.timeEnd("git");
 
   console.time("dev server");
-  const { mcpEphemeralUrl, fs } = await freestyle.requestDevServer({
+  const { mcpEphemeralUrl } = await freestyle.requestDevServer({
     repoId: repo.repoId,
   });
   console.timeEnd("dev server");
@@ -87,7 +87,9 @@ export async function createApp({
 
   if (initialMessage) {
     console.time("send initial message");
-    await AIService.sendMessage(builderAgent, app.id, mcpEphemeralUrl, fs, {
+
+    // Send the initial message using the same infrastructure as the chat API
+    await sendMessageWithStreaming(builderAgent, app.id, mcpEphemeralUrl, {
       id: crypto.randomUUID(),
       parts: [
         {
@@ -97,6 +99,7 @@ export async function createApp({
       ],
       role: "user",
     });
+
     console.timeEnd("send initial message");
   }
 

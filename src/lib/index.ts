@@ -57,8 +57,14 @@ export type { Agent } from "@mastra/core/agent";
  *   name: "MyCustomAgent",
  *   model: anthropic("claude-3-5-sonnet-20241022"),
  *   instructions: "Your custom instructions here",
- *   memory: new Memory({...}),
- *   tools: { your_custom_tool: yourTool }
+ *   memory: new Memory({
+ *     options: { lastMessages: 1000 },
+ *     vector: new PgVector({ connectionString: process.env.DATABASE_URL! }),
+ *     storage: new PostgresStore({ connectionString: process.env.DATABASE_URL! }),
+ *   }),
+ *   tools: {
+ *     your_custom_tool: yourTool,
+ *   },
  * });
  *
  * // Use your custom agent with all the streaming and durability features

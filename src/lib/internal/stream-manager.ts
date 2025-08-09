@@ -3,7 +3,6 @@ import { after } from "next/server";
 import { createResumableStreamContext } from "resumable-stream";
 import { redis, redisPublisher } from "./redis";
 import { AIService } from "./ai-service";
-import { FreestyleDevServerFilesystem } from "freestyle-sandboxes";
 import { Agent } from "@mastra/core/agent";
 
 const streamContext = createResumableStreamContext({
@@ -117,10 +116,15 @@ export async function setStream(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   stream: any
 ): Promise<StreamResponse> {
-  console.log("Setting stream for appId:", appId, "with prompt:", prompt);
+  if (!stream.toUIMessageStreamResponse) {
+    console.error("Stream missing toUIMessageStreamResponse method!");
+    throw new Error("Stream missing required toUIMessageStreamResponse method");
+  }
+
   const responseBody = stream.toUIMessageStreamResponse().body;
 
   if (!responseBody) {
+    console.error("Response body is undefined!");
     throw new Error(
       "Error creating resumable stream: response body is undefined"
     );
@@ -140,6 +144,7 @@ export async function setStream(
   );
 
   if (!resumableStream) {
+    console.error("Failed to create resumable stream");
     throw new Error("Failed to create resumable stream");
   }
 
@@ -218,7 +223,6 @@ export async function sendMessageWithStreaming(
   agent: Agent,
   appId: string,
   mcpUrl: string,
-  fs: FreestyleDevServerFilesystem,
   message: UIMessage
 ) {
   const controller = new AbortController();
@@ -236,7 +240,6 @@ export async function sendMessageWithStreaming(
     agent,
     appId,
     mcpUrl,
-    fs,
     message,
     {
       threadId: appId,
@@ -261,8 +264,8 @@ export async function sendMessageWithStreaming(
         }
       },
       onError: async (error: { error: unknown }) => {
+        console.error("Stream error in manager:", error);
         await handleStreamLifecycle(appId, "error");
-        console.error("Error:", error);
       },
       onFinish: async () => {
         await handleStreamLifecycle(appId, "finish");
@@ -271,7 +274,13 @@ export async function sendMessageWithStreaming(
     }
   );
 
-  console.log("Stream created for appId:", appId, "with prompt:", message);
+  // Ensure the stream has the proper method
+  if (!aiResponse.stream.toUIMessageStreamResponse) {
+    console.error("Stream missing toUIMessageStreamResponse method!");
+    throw new Error(
+      "Invalid stream format - missing toUIMessageStreamResponse method"
+    );
+  }
 
   return await setStream(appId, message, aiResponse.stream);
 }

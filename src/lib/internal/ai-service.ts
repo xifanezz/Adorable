@@ -2,7 +2,6 @@ import { UIMessage } from "ai";
 import { MCPClient } from "@mastra/mcp";
 import { Agent } from "@mastra/core/agent";
 import { MessageList } from "@mastra/core/agent";
-import { FreestyleDevServerFilesystem } from "freestyle-sandboxes";
 import { builderAgent } from "@/mastra/agents/builder";
 
 export interface AIStreamOptions {
@@ -61,7 +60,6 @@ export class AIService {
     agent: Agent,
     appId: string,
     mcpUrl: string,
-    fs: FreestyleDevServerFilesystem,
     message: UIMessage,
     options?: Partial<AIStreamOptions>
   ): Promise<AIResponse> {
@@ -130,6 +128,17 @@ export class AIService {
       },
       abortSignal: options?.abortSignal,
     });
+
+    // Ensure the stream has the proper method
+    if (!stream.toUIMessageStreamResponse) {
+      console.error(
+        "Stream does not have toUIMessageStreamResponse method:",
+        stream
+      );
+      throw new Error(
+        "Invalid stream format - missing toUIMessageStreamResponse method"
+      );
+    }
 
     // Return only what developers need - the stream
     return { stream };
