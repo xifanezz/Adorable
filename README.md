@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="icon.png" alt="description" width="200">
+</p>
+
 # Adorable
 
 Open-source version of **Lovable** - an AI agent that can make websites and apps through a chat interface.
