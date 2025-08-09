@@ -13,6 +13,8 @@ EventEmitter.defaultMaxListeners = 1000;
 import { NextRequest } from "next/server";
 import { redisPublisher } from "@/lib/redis";
 import { MessageList } from "@mastra/core/agent";
+import { morphTool } from "@/tools/morph-tool";
+import { FreestyleDevServerFilesystem } from "freestyle-sandboxes";
 
 export async function POST(req: NextRequest) {
   console.log("creating new chat stream");
@@ -61,13 +63,14 @@ export async function POST(req: NextRequest) {
 
   const { messages }: { messages: UIMessage[] } = await req.json();
 
-  const { mcpEphemeralUrl } = await freestyle.requestDevServer({
+  const { mcpEphemeralUrl, fs } = await freestyle.requestDevServer({
     repoId: app.info.gitRepo,
   });
 
   const resumableStream = await sendMessage(
     appId,
     mcpEphemeralUrl,
+    fs,
     messages.at(-1)!
   );
 
@@ -77,6 +80,7 @@ export async function POST(req: NextRequest) {
 export async function sendMessage(
   appId: string,
   mcpUrl: string,
+  fs: FreestyleDevServerFilesystem,
   message: UIMessage
 ) {
   const mcp = new MCPClient({
@@ -88,7 +92,7 @@ export async function sendMessage(
     },
   });
 
-  const toolsets = await mcp.getToolsets();
+  const freestyleMcpToolsets = await mcp.getToolsets();
 
   await (
     await builderAgent.getMemory()
@@ -128,7 +132,16 @@ export async function sendMessage(
     maxSteps: 100,
     maxRetries: 0,
     maxOutputTokens: 64000,
-    toolsets,
+    toolsets: {
+      ...(process.env.MORPH_API_KEY
+        ? {
+            morph: {
+              morph: morphTool(fs),
+            },
+          }
+        : {}),
+      ...freestyleMcpToolsets,
+    },
     async onChunk() {
       if (Date.now() - lastKeepAlive > 5000) {
         lastKeepAlive = Date.now();

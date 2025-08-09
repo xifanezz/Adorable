@@ -47,7 +47,7 @@ export async function createApp({
   console.timeEnd("git");
 
   console.time("dev server");
-  const { mcpEphemeralUrl } = await freestyle.requestDevServer({
+  const { mcpEphemeralUrl, fs } = await freestyle.requestDevServer({
     repoId: repo.repoId,
   });
   console.timeEnd("dev server");
@@ -87,7 +87,7 @@ export async function createApp({
 
   if (initialMessage) {
     console.time("send initial message");
-    await sendMessage(app.id, mcpEphemeralUrl, {
+    await sendMessage(app.id, mcpEphemeralUrl, fs, {
       id: crypto.randomUUID(),
       parts: [
         {
