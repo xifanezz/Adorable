@@ -1,6 +1,6 @@
 "use server";
 
-import { sendMessage } from "@/app/api/chat/route";
+import { sendMessageAndGetStream } from "@/lib/stream-manager";
 import { getUser } from "@/auth/stack-auth";
 import { appsTable, appUsers } from "@/db/schema";
 import { db } from "@/db/schema";
@@ -87,7 +87,7 @@ export async function createApp({
 
   if (initialMessage) {
     console.time("send initial message");
-    await sendMessage(app.id, mcpEphemeralUrl, {
+    await sendMessageAndGetStream(app.id, mcpEphemeralUrl, {
       id: crypto.randomUUID(),
       parts: [
         {
