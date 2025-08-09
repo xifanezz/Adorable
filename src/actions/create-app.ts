@@ -1,6 +1,6 @@
 "use server";
 
-import { sendMessageAndGetStream } from "@/lib/stream-manager";
+import { AIService } from "@/lib/ai-service";
 import { getUser } from "@/auth/stack-auth";
 import { appsTable, appUsers } from "@/db/schema";
 import { db } from "@/db/schema";
@@ -87,7 +87,7 @@ export async function createApp({
 
   if (initialMessage) {
     console.time("send initial message");
-    await sendMessageAndGetStream(app.id, mcpEphemeralUrl, {
+    await AIService.sendMessage(app.id, mcpEphemeralUrl, {
       id: crypto.randomUUID(),
       parts: [
         {

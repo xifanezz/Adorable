@@ -2,6 +2,7 @@ import { UIMessage } from "ai";
 import { after } from "next/server";
 import { createResumableStreamContext } from "resumable-stream";
 import { redis, redisPublisher } from "./redis";
+import { AIService } from "./ai-service";
 
 const streamContext = createResumableStreamContext({
   waitUntil: after,
@@ -16,7 +17,7 @@ export interface StreamResponse {
 }
 
 export interface StreamInfo {
-  readableStream(): Promise<ReadableStream>;
+  readableStream(): Promise<ReadableStream<string>>;
   response(): Promise<Response>;
 }
 
@@ -24,16 +25,16 @@ export interface StreamInfo {
  * Get the current stream state for an app
  */
 export async function getStreamState(appId: string): Promise<StreamState> {
-  const streamState = await redisPublisher.get(`app:${appId}:stream-state`);
-  return { state: streamState };
+  const state = await redisPublisher.get(`app:${appId}:stream-state`);
+  return { state };
 }
 
 /**
  * Check if a stream is currently running for an app
  */
 export async function isStreamRunning(appId: string): Promise<boolean> {
-  const state = await getStreamState(appId);
-  return state.state === "running";
+  const state = await redisPublisher.get(`app:${appId}:stream-state`);
+  return state === "running";
 }
 
 /**
@@ -42,33 +43,30 @@ export async function isStreamRunning(appId: string): Promise<boolean> {
 export async function stopStream(appId: string): Promise<void> {
   await redisPublisher.publish(
     `events:${appId}`,
-    JSON.stringify({
-      type: "abort-stream",
-    })
+    JSON.stringify({ type: "abort-stream" })
   );
+  await redisPublisher.del(`app:${appId}:stream-state`);
 }
 
 /**
- * Wait for a stream to stop running (with timeout)
+ * Wait for a stream to stop (with timeout)
  */
 export async function waitForStreamToStop(
   appId: string,
   maxAttempts: number = 60
 ): Promise<boolean> {
-  let attempts = 0;
-  while (attempts < maxAttempts) {
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    const isRunning = await isStreamRunning(appId);
-    if (!isRunning) {
+  for (let i = 0; i < maxAttempts; i++) {
+    const state = await redisPublisher.get(`app:${appId}:stream-state`);
+    if (!state) {
       return true;
     }
-    attempts++;
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   }
   return false;
 }
 
 /**
- * Force clear a stream state (used when timeout is reached)
+ * Clear the stream state for an app
  */
 export async function clearStreamState(appId: string): Promise<void> {
   await redisPublisher.del(`app:${appId}:stream-state`);
@@ -178,14 +176,13 @@ export async function setupAbortCallback(
   redis.subscribe(`events:${appId}`, (event) => {
     const data = JSON.parse(event);
     if (data.type === "abort-stream") {
-      console.log("Stream aborted for appId:", appId);
       callback();
     }
   });
 }
 
 /**
- * Update the keep-alive timestamp for a running stream
+ * Update the keep-alive timestamp for a stream
  */
 export async function updateKeepAlive(appId: string): Promise<void> {
   await redisPublisher.set(`app:${appId}:stream-state`, "running", {
@@ -212,49 +209,14 @@ export async function handleStreamLifecycle(
 }
 
 /**
- * Utility function to send a message and get a stream response
- * This is used by other parts of the application that need to send messages
+ * Send a message to the AI and handle all stream plumbing internally
+ * This is the main interface that developers should use
  */
-export async function sendMessageAndGetStream(
+export async function sendMessageWithStreaming(
   appId: string,
   mcpUrl: string,
   message: UIMessage
 ) {
-  const { MCPClient } = await import("@mastra/mcp");
-  const { builderAgent } = await import("@/mastra/agents/builder");
-  const { MessageList } = await import("@mastra/core/agent");
-
-  const mcp = new MCPClient({
-    id: crypto.randomUUID(),
-    servers: {
-      dev_server: {
-        url: new URL(mcpUrl),
-      },
-    },
-  });
-
-  const toolsets = await mcp.getToolsets();
-
-  const memory = await builderAgent.getMemory();
-  if (memory) {
-    await memory.saveMessages({
-      messages: [
-        {
-          content: {
-            parts: message.parts,
-            format: 3,
-          },
-          role: "user",
-          createdAt: new Date(),
-          id: message.id,
-          threadId: appId,
-          type: "text",
-          resourceId: appId,
-        },
-      ],
-    });
-  }
-
   const controller = new AbortController();
   let shouldAbort = false;
 
@@ -265,54 +227,40 @@ export async function sendMessageAndGetStream(
 
   let lastKeepAlive = Date.now();
 
-  const messageList = new MessageList({
-    resourceId: appId,
-    threadId: appId,
-  });
-
-  const stream = await builderAgent.stream([], {
+  // Use the AI service to handle the AI interaction
+  const aiResponse = await AIService.sendMessage(appId, mcpUrl, message, {
     threadId: appId,
     resourceId: appId,
     maxSteps: 100,
     maxRetries: 0,
     maxOutputTokens: 64000,
-    toolsets,
     async onChunk() {
       if (Date.now() - lastKeepAlive > 5000) {
         lastKeepAlive = Date.now();
         await updateKeepAlive(appId);
       }
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async onStepFinish(step: any) {
-      messageList.add(step.response.messages, "response");
-
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    async onStepFinish(_step: { response: { messages: unknown[] } }) {
       if (shouldAbort) {
         await handleStreamLifecycle(appId, "error");
         controller.abort("Aborted stream after step finish");
-        const messages = messageList.drainUnsavedMessages();
+        const messages = await AIService.getUnsavedMessages(appId);
         console.log(messages);
-        if (memory) {
-          await memory.saveMessages({
-            messages,
-          });
-        }
+        await AIService.saveMessagesToMemory(appId, messages);
       }
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onError: async (event: any) => {
-      await mcp.disconnect();
+    onError: async (error: { error: unknown }) => {
       await handleStreamLifecycle(appId, "error");
-      console.error("Error:", event.error);
+      console.error("Error:", error);
     },
     onFinish: async () => {
       await handleStreamLifecycle(appId, "finish");
-      await mcp.disconnect();
     },
     abortSignal: controller.signal,
   });
 
   console.log("Stream created for appId:", appId, "with prompt:", message);
 
-  return await setStream(appId, message, stream);
+  return await setStream(appId, message, aiResponse.stream);
 }
