@@ -1,14 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import {
-  Share2Icon,
-  LinkIcon,
-  CopyIcon,
-  ExternalLinkIcon,
-  RocketIcon,
-  Loader2Icon,
-} from "lucide-react";
+import { Share2 as Share2Icon, Link as LinkIcon, Copy as CopyIcon, ExternalLink as ExternalLinkIcon, Rocket as RocketIcon, Loader as Loader2Icon } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,

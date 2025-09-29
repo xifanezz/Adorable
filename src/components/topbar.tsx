@@ -1,10 +1,4 @@
-import {
-  ArrowUpRightIcon,
-  ComputerIcon,
-  GlobeIcon,
-  HomeIcon,
-  TerminalIcon,
-} from "lucide-react";
+import { ArrowUpRight as ArrowUpRightIcon, Computer as ComputerIcon, Globe as GlobeIcon, PhoneIncoming as HomeIcon, Terminal as TerminalIcon } from "lucide-react";
 import Link from "next/link";
 import React, { useState } from "react";
 import { Button } from "./ui/button";

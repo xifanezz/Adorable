@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { Trash, ExternalLink, MoreVertical } from "lucide-react";
+import { Trash, ExternalLink, MoveVertical as MoreVertical } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { deleteApp } from "@/actions/delete-app";
 import { toast } from "sonner";

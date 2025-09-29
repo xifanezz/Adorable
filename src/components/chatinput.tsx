@@ -8,7 +8,7 @@ import {
   PromptInputTextarea,
 } from "@/components/ui/prompt-input";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, SquareIcon, Paperclip, X } from "lucide-react";
+import { ArrowUp, Square as SquareIcon, Paperclip, X } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { compressImage, CompressedImage } from "@/lib/image-compression";
 
