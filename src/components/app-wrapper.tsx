@@ -137,7 +137,7 @@ export default function AppWrapper({
         >
           <button
             onClick={() => setMobileActiveTab("chat")}
-            className={`flex-1 flex flex-col items-center justify-center py-2 px-1 transition-colors ${
+            className={`flex-1 flex flex-col items-center justify-center py-2 px-1 transition-colors font-tajawal ${
               mobileActiveTab === "chat"
                 ? "text-primary"
                 : "text-muted-foreground hover:text-foreground"
@@ -148,11 +148,11 @@ export default function AppWrapper({
                 mobileActiveTab === "chat" ? "fill-current" : ""
               }`}
             />
-            <span className="text-xs font-medium">Chat</span>
+            <span className="text-xs font-medium">محادثة</span>
           </button>
           <button
             onClick={() => setMobileActiveTab("preview")}
-            className={`flex-1 flex flex-col items-center justify-center py-2 px-1 transition-colors ${
+            className={`flex-1 flex flex-col items-center justify-center py-2 px-1 transition-colors font-tajawal ${
               mobileActiveTab === "preview"
                 ? "text-primary"
                 : "text-muted-foreground hover:text-foreground"
@@ -163,7 +163,7 @@ export default function AppWrapper({
                 mobileActiveTab === "preview" ? "fill-current" : ""
               }`}
             />
-            <span className="text-xs font-medium">Preview</span>
+            <span className="text-xs font-medium">معاينة</span>
           </button>
         </div>
       )}

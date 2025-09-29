@@ -18,8 +18,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Adorable",
-  description: "Open Source AI App Builder",
+  title: "نقلة - Naqla",
+  description: "منشئ التطبيقات بالذكاء الاصطناعي",
   manifest: "/manifest.json",
   // viewport: {
   //   width: "device-width",
@@ -36,7 +36,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="ar" dir="rtl" suppressHydrationWarning>
       {/* <head>
         <script
           crossOrigin="anonymous"
@@ -45,7 +45,7 @@ export default function RootLayout({
       </head> */}
       <body
         className={cn(
-          `${geistSans.variable} ${geistMono.variable} antialiased`
+          `${geistSans.variable} ${geistMono.variable} antialiased font-tajawal`
         )}
       >
         <ThemeProvider

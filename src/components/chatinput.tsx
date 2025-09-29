@@ -120,12 +120,12 @@ export function PromptInputBasic({
         <PromptInputTextarea
           placeholder={
             isGenerating
-              ? "Adorable is working..."
+              ? "نقلة تعمل..."
               : isCompressing
-                ? "Compressing images..."
-                : "Type your message here..."
+                ? "ضغط الصور..."
+                : "اكتب رسالتك هنا..."
           }
-          className="pr-20 bg-transparent dark:bg-transparent"
+          className="pr-20 bg-transparent dark:bg-transparent font-tajawal text-right"
           disabled={disabled}
         />
       </PromptInput>

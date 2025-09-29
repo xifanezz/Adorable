@@ -64,19 +64,19 @@ export function ShareButton({ className, domain, appId }: ShareButtonProps) {
         <Button
           variant="ghost"
           size="sm"
-          className={`flex items-center gap-1 ${className || ""}`}
+          className={`flex items-center gap-1 font-tajawal ${className || ""}`}
         >
-          Share
+          مشاركة
           <Share2Icon className="h-4 w-4 ml-1" />
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md w-[95vw] max-w-[450px]">
         <DialogHeader>
-          <DialogTitle>Share App</DialogTitle>
+          <DialogTitle>مشاركة التطبيق</DialogTitle>
           <DialogDescription>
             {domain
-              ? "Share your app using the preview domain or publish the latest version."
-              : "Publish your app to create a shareable preview URL."}
+              ? "شارك تطبيقك باستخدام رابط المعاينة أو انشر الإصدار الأحدث."
+              : "انشر تطبيقك لإنشاء رابط معاينة قابل للمشاركة."}
           </DialogDescription>
         </DialogHeader>
 
@@ -84,8 +84,8 @@ export function ShareButton({ className, domain, appId }: ShareButtonProps) {
           {domain ? (
             <>
               <div>
-                <Label htmlFor="share-url" className="mb-2 block">
-                  Preview Domain
+                <Label htmlFor="share-url" className="mb-2 block font-tajawal">
+                  رابط المعاينة
                 </Label>
                 <div className="grid grid-cols-[1fr_auto] w-full overflow-hidden border border-input rounded-md">
                   <div className="overflow-hidden flex items-center bg-muted px-3 py-2">

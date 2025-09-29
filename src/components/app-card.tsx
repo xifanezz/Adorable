@@ -41,14 +41,14 @@ export function AppCard({ id, name, createdAt, onDelete }: AppCardProps) {
   };
 
   return (
-    <Card className="p-3 sm:p-4 border-b border rounded-md h-32 sm:h-36 relative w-full">
+    <Card className="p-3 sm:p-4 border-b border rounded-md h-32 sm:h-36 relative w-full font-tajawal">
       <Link href={`/app/${id}`} className="cursor-pointer block">
         <CardHeader className="p-0">
-          <CardTitle className="text-sm sm:text-base truncate">
+          <CardTitle className="text-sm sm:text-base truncate text-right">
             {name}
           </CardTitle>
-          <CardDescription className="text-xs sm:text-sm">
-            Created {createdAt.toLocaleDateString()}
+          <CardDescription className="text-xs sm:text-sm text-right">
+            تم الإنشاء {createdAt.toLocaleDateString('ar-SA')}
           </CardDescription>
         </CardHeader>
       </Link>
@@ -56,14 +56,14 @@ export function AppCard({ id, name, createdAt, onDelete }: AppCardProps) {
       <div className="absolute top-2 right-2 transition-opacity">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none">
+            <button className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none font-tajawal">
               <MoreVertical className="h-4 w-4" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={handleOpen}>
               <ExternalLink className="mr-2 h-4 w-4" />
-              Open
+              فتح
             </DropdownMenuItem>
 
             <DropdownMenuSeparator />
@@ -72,7 +72,7 @@ export function AppCard({ id, name, createdAt, onDelete }: AppCardProps) {
               className="text-red-600 dark:text-red-400"
             >
               <Trash className="mr-2 h-4 w-4" />
-              Delete
+              حذف
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

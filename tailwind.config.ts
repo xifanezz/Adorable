@@ -18,6 +18,9 @@ const config = {
       },
     },
     extend: {
+      fontFamily: {
+        'tajawal': ['Tajawal', 'sans-serif'],
+      },
       backgroundImage: {
         'grid-pattern': 'radial-gradient(circle, #000 1px, transparent 1px)',
       },

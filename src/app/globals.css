@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @custom-variant dark (&:is(.dark *));
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@200;300;400;500;700;800;900&display=swap');
 
 @layer base {
   :root {
@@ -193,6 +194,8 @@
 
 body {
   margin: 0;
+  font-family: 'Tajawal', sans-serif;
+  direction: rtl;
 }
 
 /* Custom Markdown Styling */
@@ -275,6 +278,7 @@ body {
   margin: 0;
   height: 100vh;
   height: 100dvh; /* Dynamic viewport height for mobile */
+  font-family: 'Tajawal', sans-serif;
 }
 
 /* Safe area insets for mobile Safari */

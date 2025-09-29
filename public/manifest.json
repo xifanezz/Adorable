@@ -1,6 +1,6 @@
 {
-  "short_name": "Adorable",
-  "name": "Adorable",
+  "short_name": "نقلة",
+  "name": "نقلة - Naqla",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",
@@ -35,6 +35,6 @@
   "scope": "/",
   "theme_color": "#ffffff",
   "shortcuts": [],
-  "description": "Adorable is an open source AI app builder.",
+  "description": "نقلة هو منشئ التطبيقات بالذكاء الاصطناعي مفتوح المصدر.",
   "screenshots": []
 }

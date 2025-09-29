@@ -32,7 +32,7 @@ export function TopBar({
   const [modalOpen, setModalOpen] = useState(false);
 
   return (
-    <div className="h-12 sticky top-0 flex items-center px-4 border-b border-gray-200 bg-background justify-between">
+    <div className="h-12 sticky top-0 flex items-center px-4 border-b border-gray-200 bg-background justify-between font-tajawal">
       <Link href={"/"}>
         <HomeIcon className="h-5 w-5" />
       </Link>
@@ -55,13 +55,13 @@ export function TopBar({
         </DialogTrigger>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Open In</DialogTitle>
+            <DialogTitle>فتح في</DialogTitle>
           </DialogHeader>
           <div>
             <div className="flex flex-col gap-2 pb-4">
               <div className="font-bold mt-4 flex items-center gap-2">
                 <GlobeIcon className="inline h-4 w-4 ml-1" />
-                Browser
+                المتصفح
               </div>
               <div>
                 <a href={codeServerUrl} target="_blank" className="w-full">
